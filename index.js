@@ -1,4 +1,4 @@
-require('dotenv').config()
-require('babel-register')
-require('./config.js')
-require('./app.js')
+require('dotenv').config();
+require('babel-register');
+require('./config.js');
+require('./app.js');
