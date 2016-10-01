@@ -1,9 +1,4 @@
-// import firebase from 'firebase'
-// require('../config')
-// require('babel-register')
 import {expect} from 'chai'
-// import {getPostsForHashtag} from '../helpers'
-// import {newEmailFound, getNextPage, newProfileParsed, getPictures, newPageScraped, saveData, picturesFoundForPage, changePage, store} from '../store'
 import {emails} from '../reducers'
 import {store} from '../store'
 import {
