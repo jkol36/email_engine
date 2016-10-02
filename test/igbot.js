@@ -12,7 +12,7 @@ import {
 } from '../actionCreators';
 
 
-describe('IGBOT', () => {
+describe('IGBOT SETUP', () => {
   let {dispatch} = store;
   let {getState} = store;
   it('should set firebase status to finding pictures for hashtag', done => {

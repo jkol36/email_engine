@@ -2,18 +2,27 @@ import {firebaseRef} from './config';
 import {
   FINDING_PICTURES_FOR_HASHTAG,
   FOUND_PICTURES_FOR_HASHTAG,
+  SAVING_PAGE_INFO,
   FINDING_USERS_FROM_PICTURES,
   FOUND_USERS_FROM_PICTURES,
   PARSING_USERS_FOR_EMAILS,
   EMAILS_FOUND_FOR_HASHTAG,
   GETTING_NEXT_PAGE,
-  FOUND_NEXT_PAGE
+  FOUND_NEXT_PAGE,
+  FOUND_PROFILES
 } from './reducers';
 
-export const picturesFound = pictures => ({
-  type: 'PICTURES_FOUND',
-  pictures
-});
+
+
+export const savePageInfo = pageInfo => (dispatch, getState) => {
+  return new Promise((resolve, reject) => {
+    dispatch({
+      type: SAVING_PAGE_INFO,
+      lastPage: pageInfo.start_cursor,
+      nextPage: pageInfo.end_cursor
+    });
+  });
+};
 export const findingPicturesForHashtag = hashtag => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
     console.log('finding pictures for hashtag', hashtag);
@@ -24,31 +33,38 @@ export const findingPicturesForHashtag = hashtag => (dispatch, getState) => {
   });
 };
 
-export const foundPicturesForHashtag = (hashtag, pictureCount) => (dispatch, getState) => {
+export const foundPicturesForHashtag = (hashtag, pictureCount, pictures) => (dispatch, getState) => {
   console.log('found pictures for hashtag called with', hashtag, pictureCount);
   return new Promise((resolve, reject) => {
-    dispatch({type: FOUND_PICTURES_FOR_HASHTAG});
+    dispatch({type: FOUND_PICTURES_FOR_HASHTAG, pictures});
     firebaseRef.child('status').set(`found pictures for hashtag ${hashtag}`, () => {
     firebaseRef.child(hashtag).child('number_of_pics_found').transaction(currentValue => currentValue + pictureCount, resolve());
     });
   });
 };
 
-export const findingUsersFromPictures = (pictureArray, pictureCount) => (dispatch, getState) => {
+export const findingUsersFromPictures = () => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
     dispatch({type: FINDING_USERS_FROM_PICTURES});
     firebaseRef.child('status').set('finding users from pictures', resolve());
   });
 };
 
-export const foundUsersFromPictures = (hashtag, userCount) => (dispatch, getState) => {
+export const foundUsersFromPictures = (hashtag, userCount, users) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
     firebaseRef.child('status').set(`found users from pictures`, () => {
       firebaseRef.child(hashtag).child('users_found').transaction(currentValue => currentValue + userCount, () => {
-        dispatch({type: FOUND_USERS_FROM_PICTURES});
+        dispatch({type: FOUND_USERS_FROM_PICTURES, users});
         resolve();
       });
     });
+  });
+};
+
+export const foundProfiles = profiles => (dispatch, getState) => {
+  return new Promise((resolve, reject) => {
+    dispatch({type: FOUND_PROFILES, profiles});
+    resolve();
   });
 };
 
@@ -61,12 +77,14 @@ export const parsingUsersForEmails = () => (dispatch, getState) => {
   });
 };
 
-export const emailsFoundForHashtag = (hashtag, emailCount) => (dispatch, getState) => {
+export const emailsFoundForHashtag = (hashtag, emailCount, emails) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
     firebaseRef.child('status').set(`emails found for hashtag ${hashtag}`, () => {
       firebaseRef.child(hashtag).child('emails_found').transaction(currentValue => currentValue + emailCount, () => {
-        dispatch({type: EMAILS_FOUND_FOR_HASHTAG});
-        resolve();
+        firebaseRef.child(hashtag).child('emails').update(emails, () => {
+          dispatch({type: EMAILS_FOUND_FOR_HASHTAG, emails});
+          resolve();
+        });
       });
     });
   });

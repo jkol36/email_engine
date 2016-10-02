@@ -1,4 +1,3 @@
-export const EMAIL_FOUND = 'EMAIL_FOUND';
 export const PROFILE_PARSED = 'PROFILE_PARSED';
 export const CHANGE_PAGE = 'CHANGE_PAGE';
 export const FINDING_PICTURES_FOR_HASHTAG = 'FINDING_PICTURES_FOR_HASHTAG';
@@ -9,15 +8,13 @@ export const PARSING_USERS_FOR_EMAILS = 'PARSING_USERS_FOR_EMAILS';
 export const EMAILS_FOUND_FOR_HASHTAG = 'EMAILS_FOUND_FOR_HASHTAG';
 export const GETTING_NEXT_PAGE = 'GETTING_NEXT_PAGE';
 export const FOUND_NEXT_PAGE = 'FOUND_NEXT_PAGE';
+export const SAVING_PAGE_INFO = 'SAVING_PAGE_INFO';
+export const FOUND_PROFILES = 'FOUND_PROFILES';
 
 export const emails = (state = [], action) => {
   switch (action.type) {
-    case EMAIL_FOUND:
-      if (state.indexOf(action.email) === -1) {
-        return [...state, action.email];
-      }
-      return state;
-
+    case EMAILS_FOUND_FOR_HASHTAG:
+      return [...state, ...action.emails.filter(email => state.indexOf(email) === -1)];
     default:
       return state;
   }
@@ -32,10 +29,42 @@ export const profilesSearched = (state = 0, action) => {
   }
 };
 
-export const page = (state = 0, action) => {
+export const page = (state = {}, action) => {
   switch (action.type) {
     case CHANGE_PAGE:
       return action.page;
+    case SAVING_PAGE_INFO:
+      const newState = {};
+      newState.nextPage = action.nextPage;
+      newState.lastPage = action.lastPage;
+      return newState;
+    default:
+      return state;
+  }
+};
+
+export const pictures = (state = [], action) => {
+  switch (action.type) {
+    case FOUND_PICTURES_FOR_HASHTAG:
+      return action.pictures;
+    default:
+      return state;
+  }
+};
+
+export const users = (state = [], action) => {
+  switch (action.type) {
+    case FOUND_USERS_FROM_PICTURES:
+      return action.users;
+    default:
+      return state;
+  }
+}
+
+export const profiles = (state = [], action) => {
+  switch(action.type) {
+    case FOUND_PROFILES:
+      return action.profiles;
     default:
       return state;
   }
@@ -59,6 +88,8 @@ export const status = (state = 'INITIALIZING', action) => {
       return GETTING_NEXT_PAGE;
     case FOUND_NEXT_PAGE:
       return FOUND_NEXT_PAGE;
+    case SAVING_PAGE_INFO:
+      return SAVING_PAGE_INFO;
     default:
       return state;
   }

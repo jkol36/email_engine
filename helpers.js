@@ -2,7 +2,7 @@ const agent = require('superagent');
 import osmosis from 'osmosis';
 import {headers} from './config';
 
-export function getPostsForHashtag(hashtag, placeholder) {
+export const getPostsForHashtag = (hashtag, placeholder) => {
   return new Promise((resolve, reject) => {
     let url = `https://www.instagram.com/explore/tags/${hashtag}/?__a=1&media.after(${placeholder}`;
     agent
@@ -18,7 +18,7 @@ export function getPostsForHashtag(hashtag, placeholder) {
         }
       });
   });
-}
+};
 
 export const findUserFromPic = (picId, term, headers) => {
   let tmpHeadersDict = Object.assign({}, headers, {
