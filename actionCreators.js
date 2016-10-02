@@ -12,8 +12,6 @@ import {
   FOUND_PROFILES
 } from './reducers';
 
-
-
 export const savePageInfo = pageInfo => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
     dispatch({
@@ -23,6 +21,7 @@ export const savePageInfo = pageInfo => (dispatch, getState) => {
     });
   });
 };
+
 export const findingPicturesForHashtag = hashtag => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
     console.log('finding pictures for hashtag', hashtag);
@@ -98,6 +97,7 @@ export const gettingNextPage = (hashtag, lastPage, nextPage) => (dispatch, getSt
     });
   });
 };
+
 export const foundNextPage = page => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
     firebaseRef.child('status').set(`found next page PAGE_ID:${page}`, () => {
@@ -106,4 +106,3 @@ export const foundNextPage = page => (dispatch, getState) => {
     });
   });
 };
-
