@@ -3,18 +3,8 @@ import {store} from '../store';
 import {firebaseRef} from '../config'
 import {
   getFirstPageForHashtag,
-  getPostsForHashtag
 } from '../helpers';
-import {
-  findingPicturesForHashtag,
-  foundPicturesForHashtag,
-  findingUsersFromPictures,
-  foundUsersFromPictures,
-  parsingUsersForEmails,
-  emailsFoundForHashtag,
-  gettingFirstPageForHashtag,
-  gettingNextPage,
-  foundNextPage,
+import {,
   savePageInfo
 } from '../actionCreators';
 
