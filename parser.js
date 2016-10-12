@@ -1,8 +1,9 @@
 export const parseProfile = data => {
+  let { username } = data
   const extractEmails = text => {
   return text.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi);
   };
-  const {instagramProfile} = data;
+  const {instagramProfile} = data.instagramProfile;
   return new Promise((resolve, reject) => {
     let json = instagramProfile.split('window._sharedData = ')[1];
     json = json.split('"environment_switcher_visible_server_guess": true')[0];
@@ -13,7 +14,7 @@ export const parseProfile = data => {
     if (bio) {
       let emails = extractEmails(bio);
       if (emails) {
-        resolve(emails[0]);
+        resolve({email: emails[0], username});
       }
       else {
         resolve({status: 404});

@@ -1,5 +1,10 @@
 import {expect} from 'chai';
 import {store} from '../store';
+import {firebaseRef} from '../config'
+import {
+  getFirstPageForHashtag,
+  getPostsForHashtag
+} from '../helpers';
 import {
   findingPicturesForHashtag,
   foundPicturesForHashtag,
@@ -7,68 +12,41 @@ import {
   foundUsersFromPictures,
   parsingUsersForEmails,
   emailsFoundForHashtag,
+  gettingFirstPageForHashtag,
   gettingNextPage,
-  foundNextPage
+  foundNextPage,
+  savePageInfo
 } from '../actionCreators';
 
 
 describe('IGBOT SETUP', () => {
   let {dispatch} = store;
   let {getState} = store;
-  it('should set firebase status to finding pictures for hashtag', done => {
-    dispatch(findingPicturesForHashtag('vegan'))
-    .then(() => {
-      expect(getState().status).to.eq('FINDING_PICTURES_FOR_HASHTAG');
-      done();
+  it('should set last page scraped for vegan to J0HV_1MFAAAAF0HV_1L5wAAAFiYA', done => {
+    firebaseRef.child('vegan').child('LAST_PAGE_SCRAPED').set('J0HV_1MFAAAAF0HV_1L5wAAAFiYA', () => {
+      done()
     });
   });
-  it('should set firebase status to found pictures for hashtag', done => {
-    dispatch(foundPicturesForHashtag('vegan', 18))
-    .then(() => {
-      expect(getState().status).to.eq('FOUND_PICTURES_FOR_HASHTAG');
-      done();
-    });
-  });
-  it('should set firebase status to finding users from pictures', done => {
-    dispatch(findingUsersFromPictures([], 0))
-    .then(() => {
-      expect(getState().status).to.eq('FINDING_USERS_FROM_PICTURES');
-      done();
-    });
-  });
-  it('should set firebase status to found users from pictures', done => {
-    dispatch(foundUsersFromPictures('vegan', 18))
-    .then(() => {
-      expect(getState().status).to.eq('FOUND_USERS_FROM_PICTURES');
-      done();
-    });
-  });
-  it('should set firebase status to parsing users for their email', done => {
-    dispatch(parsingUsersForEmails())
-    .then(() => {
-      expect(getState().status).to.eq('PARSING_USERS_FOR_EMAILS');
-      done();
-    });
-  });
-  it('should set firebase status to emails found for hashtag', done => {
-    dispatch(emailsFoundForHashtag('vegan', 18))
-    .then(() => {
-      expect(getState().status).to.eq('EMAILS_FOUND_FOR_HASHTAG');
-      done();
-    });
-  });
-  it('should set firebase status to fetching next page for hashtag', done => {
-    dispatch(gettingNextPage('vegan', 1, 2))
-    .then(() => {
-      expect(getState().status).to.eq('GETTING_NEXT_PAGE');
-      done();
-    });
-  });
-  it('should set firebase status to found next page', done => {
-    dispatch(foundNextPage(2))
-    .then(() => {
-      expect(getState().status).to.eq('FOUND_NEXT_PAGE');
+})
+
+describe('helpers', () => {
+  let lastPageId 
+  it('should getInitialPage for hashtag vegan from instagram', done => {
+   getFirstPageForHashtag('vegan')
+    .then(pageId => {
+      lastPageId = pageId
+      expect(pageId).to.be.a('string');
       done();
     });
   });
 });
+describe('action creators', () => {
+  let {dispatch} = store
+  it('should set the current page id in firebase', done => {
+    dispatch(savePageInfo('vegan', 'testing'))
+    .then(() => {
+      console.log('done')
+      done()
+    })
+  })
+})

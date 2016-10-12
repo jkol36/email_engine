@@ -1,63 +1,61 @@
+import {firebaseRef} from './config';
 import {
 	getPostsForHashtag,
+  getFirstPageForHashtag,
   findUserFromPic,
   getUserProfile
 } from './helpers';
 import {
-  findingPicturesForHashtag,
-  foundPicturesForHashtag,
+  savePictures,
   savePageInfo,
-  findingUsersFromPictures,
   foundUsersFromPictures,
-  parsingUsersForEmails,
-  foundProfiles,
-  emailsFoundForHashtag
+  parsedUsersForEmails,
+  saveProfiles,
+  emailsFoundForHashtag,
+  gettingFirstPageForHashtag,
 } from './actionCreators';
 import {parseProfile} from './parser';
 import {store} from './store';
 
-const start = hashtag => {
-  const {dispatch, getState} = store;
-  dispatch(findingPicturesForHashtag(hashtag))
-  .then(() => getPostsForHashtag(hashtag))
-  .then(res => {
-    return Promise.join([
-      dispatch(foundPicturesForHashtag(hashtag,
-        res.tag.media.count,
-        res.tag.media.nodes)),
-      dispatch(savePageInfo(res.tag.media.page_info))
-    ]);
-  })
-  .then(() => {
-    if (getState().pictures.length > 0) {
-      dispatch(findingUsersFromPictures());
-      return Promise.map(getState().pictures, picture => {
-        return findUserFromPic(picture.code);
-      });
+let {dispatch, getState} = store;
+const start = (hashtag) => {
+  dispatch(gettingFirstPageForHashtag(hashtag))
+  .then(() => getFirstPageForHashtag(hashtag))
+  .then(pageId => getPostsForHashtag(hashtag, pageId, 10))
+  .then((obj) => {
+    if(obj.posts.length === 0) {
+        firebaseRef.child(hashtag).child('LAST_PAGE_SCRAPED').remove().then(() => start(hashtag))
+      }
+    else {
+      return Promise.all([
+        dispatch(savePageInfo(hashtag, obj.nextPage)),
+        dispatch(savePictures(hashtag, obj.posts.length, obj.posts))
+      ]);
     }
   })
+  .then(() => Promise.map(getState().pictures, (picture) => {
+    return findUserFromPic(picture.code);
+  }))
   .then(users => dispatch(foundUsersFromPictures(hashtag, users.length, users)))
-  .then(() => {
-    if (getState().users.length > 0) {
-      dispatch(parsingUsersForEmails());
-      return Promise.map(getState().users, user => {
-        return getUserProfile(user.username);
-      });
-    }
-  })
-  .then(profiles => dispatch(foundProfiles(profiles)))
-  .then(() => {
-    if (getState().profiles.length > 0) {
-      return Promise.map(getState().profiles, profile => {
-        return parseProfile(profile);
-      });
-    }
-  })
+  .then(() => Promise.map(getState().users, (user) => {
+    return getUserProfile(user.username)
+  }))
+  .then(profiles => dispatch(saveProfiles(profiles)))
+  .then((profiles) => Promise.map(profiles, (profile) => {
+    return parseProfile(profile)
+  }))
   .then(results => {
-    let emails = results.filter(result => result.status === undefined);
-    return dispatch(emailsFoundForHashtag(hashtag, emails.length, emails));
+    let usersWithEmails = results.filter(result => result.status === undefined);
+    return Promise.join([
+      dispatch(parsedUsersForEmails(getState().profiles.length, hashtag)),
+      dispatch(emailsFoundForHashtag(hashtag, usersWithEmails.length, usersWithEmails))
+    ])
   })
-  .then(() => console.log(getState().emails));
+  .then(() => setTimeout(() => start(hashtag), 100))
+  .catch(err => console.log('caught error', err.stack))
 };
 
-start('vegan');
+start('vegan')
+
+
+
