@@ -31,6 +31,7 @@ export const gettingFirstPageForHashtag = hashtag => (dispatch, getState) => {
 export const savePictures = (hashtag, pictureCount, pictures) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
     dispatch({type: SAVE_PICTURES, pictureCount, pictures});
+    resolve()
   });
 };
 
