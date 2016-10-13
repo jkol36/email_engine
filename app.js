@@ -1,7 +1,8 @@
-import {firebaseRef} from './config';
+import {firebaseRef, pictureCount} from './config';
 import {
 	getPostsForHashtag,
   getFirstPageForHashtag,
+  getNextPageForHashtag,
   findUserFromPic,
   getUserProfile
 } from './helpers';
@@ -51,11 +52,10 @@ const start = (hashtag) => {
       dispatch(emailsFoundForHashtag(hashtag, usersWithEmails.length, usersWithEmails))
     ])
   })
-  .then(() => setTimeout(() => start(hashtag), 100))
+  .then(() => setTimeout(() => start(hashtag), 1000))
   .catch(err => console.log('caught error', err.stack))
 };
 
-start('vegan')
-
+start('tech')
 
 

@@ -19,5 +19,6 @@ export const headers = {
   'referer': 'https://www.instagram.com/explore/tags/poker/',
   'authority': 'www.instagram.com'
 };
-export const firebaseRef = firebase.database().ref('igbot');
+export const firebaseRef = firebase.database().ref('igbot').child('hashtags');
+export const pictureCount = 1000
 global.Promise = require('bluebird');
