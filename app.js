@@ -20,6 +20,7 @@ import {store} from './store';
 
 let {dispatch, getState} = store;
 const start = (hashtag) => {
+  console.log('starting', hashtag)
   dispatch(gettingFirstPageForHashtag(hashtag))
   .then(() => getFirstPageForHashtag(hashtag))
   .then(pageId => getPostsForHashtag(hashtag, pageId, pictureCount))
@@ -62,14 +63,18 @@ const start = (hashtag) => {
         setTimeout(() => start(hashtag), 10000)
       case 400:
         start(hashtag)
+      case 404:
+        setTimeout(() => start(hashtag))
       case 429:
         setTimeout(() => start(hashtag), 10000)
       case 500:
         setTimeout(() => start(hashtag), 10000)
+      default:
+        console.log(err)
     }
   })
 };
 
-start('tech')
+start(process.argv[2])
 
 
