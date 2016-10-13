@@ -31,16 +31,13 @@ export const gettingFirstPageForHashtag = hashtag => (dispatch, getState) => {
 export const savePictures = (hashtag, pictureCount, pictures) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
     dispatch({type: SAVE_PICTURES, pictureCount, pictures});
-    firebaseRef.child(hashtag).child('number_of_pics_found').transaction(currentValue => currentValue + pictureCount, resolve());
   });
 };
 
 export const foundUsersFromPictures = (hashtag, userCount, users) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
-    firebaseRef.child(hashtag).child('users_found').transaction(currentValue => currentValue + userCount, () => {
-      dispatch({type: FOUND_USERS_FROM_PICTURES, users});
-       resolve();
-    });
+    dispatch({type: FOUND_USERS_FROM_PICTURES, users});
+    resolve();
   });
 };
 
