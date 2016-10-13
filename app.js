@@ -53,7 +53,16 @@ const start = (hashtag) => {
     ])
   })
   .then(() => setTimeout(() => start(hashtag), 1000))
-  .catch(err => console.log('caught error', err.stack))
+  .catch(err => {
+    switch(err.status) {
+      case 502:
+        setTimeout(() => start(hashtag), 10000)
+      case 400:
+        start(hashtag)
+      case 429:
+        setTimeout(() => start(hashtag), 10000)
+    }
+  })
 };
 
 start('tech')
