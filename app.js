@@ -25,7 +25,7 @@ const start = (hashtag) => {
   .then(pageId => getPostsForHashtag(hashtag, pageId, pictureCount))
   .then((obj) => {
     if(!obj.hasNextPage) {
-      console.log('no more pages')
+      firebaseRef.child(hashtag).child('STOPPED').child('reason').set('No more pages left', () => process.exit())
     }
     if(obj.posts.length === 0) {
         firebaseRef.child(hashtag).child('LAST_PAGE_SCRAPED').remove().then(() => start(hashtag))
