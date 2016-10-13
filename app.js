@@ -64,6 +64,8 @@ const start = (hashtag) => {
         start(hashtag)
       case 429:
         setTimeout(() => start(hashtag), 10000)
+      case 500:
+        setTimeout(() => start(hashtag), 10000)
     }
   })
 };
