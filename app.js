@@ -22,7 +22,7 @@ let {dispatch, getState} = store;
 const start = (hashtag) => {
   dispatch(gettingFirstPageForHashtag(hashtag))
   .then(() => getFirstPageForHashtag(hashtag))
-  .then(pageId => getPostsForHashtag(hashtag, pageId, 10))
+  .then(pageId => getPostsForHashtag(hashtag, pageId, pictureCount))
   .then((obj) => {
     if(obj.posts.length === 0) {
         firebaseRef.child(hashtag).child('LAST_PAGE_SCRAPED').remove().then(() => start(hashtag))
