@@ -20,5 +20,5 @@ export const headers = {
   'authority': 'www.instagram.com'
 };
 export const firebaseRef = firebase.database().ref('igbot').child('hashtags');
-export const pictureCount = 1000
+export const pictureCount = 12
 global.Promise = require('bluebird');

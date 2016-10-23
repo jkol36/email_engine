@@ -1,3 +1,4 @@
+import firebase from 'firebase'
 import {firebaseRef, pictureCount} from './config';
 import {
 	getPostsForHashtag,
@@ -20,7 +21,6 @@ import {store} from './store';
 
 let {dispatch, getState} = store;
 const start = (hashtag) => {
-  console.log('starting', hashtag)
   dispatch(gettingFirstPageForHashtag(hashtag))
   .then(() => getFirstPageForHashtag(hashtag))
   .then(pageId => getPostsForHashtag(hashtag, pageId, pictureCount))
@@ -59,10 +59,13 @@ const start = (hashtag) => {
   .then(() => setTimeout(() => start(hashtag), 1000))
   .catch(err => {
     switch(err.status) {
+      //bad gateway
       case 502:
         setTimeout(() => start(hashtag), 10000)
+      //bad request
       case 400:
         start(hashtag)
+      //not found
       case 404:
         setTimeout(() => start(hashtag))
       case 429:
@@ -75,6 +78,37 @@ const start = (hashtag) => {
   })
 };
 
-start(process.argv[2])
+const saveEmailsToTxtFile = () => {
+  let emails  = []
+  firebase.database().ref('igbot').child('hashtags').child('5dimes/emails').once('value', snap => {
+  if(snap.exists()) {
+    Object.keys(snap.val()).map(k => snap.val()[k]).filter(obj => {
+      obj.forEach(emailObj => {
+        if(emails.indexOf(emailObj.email.toLowerCase()) === -1 ) {
+          emails.push(emailObj.email.toLowerCase())
+        }
+      })
+    })
+    let fs = require('fs')
+    fs.writeFile('emails.txt', emails, () => {
+      console.log('done')
+    })
+  }
+  else {
+    console.log('doesnt exist')
+  }
+  })
+}
+
+const listenForWork = () => {
+  console.log('listening for work')
+  firebase.database().ref('igbot').child('work-to-do').on('child_added', snap => {
+    firebase.database().ref('igbot').child('work-to-do').child(snap.key).remove()
+    .then(() => start(snap.val().hashtag))
+  })
+}
+
+listenForWork()
+
 
 

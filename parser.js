@@ -14,7 +14,7 @@ export const parseProfile = data => {
     if (bio) {
       let emails = extractEmails(bio);
       if (emails) {
-        resolve({email: emails[0], username});
+        resolve({email: emails[0], username, createdAt:Date.now()});
       }
       else {
         resolve({status: 404});
