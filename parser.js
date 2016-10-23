@@ -1,9 +1,10 @@
 export const parseProfile = data => {
+  console.log('got data', data)
   let { username } = data
   const extractEmails = text => {
   return text.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi);
   };
-  const {instagramProfile} = data.instagramProfile;
+  const {instagramProfile} = data;
   return new Promise((resolve, reject) => {
     let json = instagramProfile.split('window._sharedData = ')[1];
     json = json.split('"environment_switcher_visible_server_guess": true')[0];

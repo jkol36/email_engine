@@ -50,6 +50,7 @@ const start = (hashtag) => {
     return parseProfile(profile)
   }))
   .then(results => {
+    console.log(results)
     let usersWithEmails = results.filter(result => result.status === undefined);
     return Promise.join([
       dispatch(parsedUsersForEmails(getState().profiles.length, hashtag)),
@@ -108,7 +109,8 @@ const listenForWork = () => {
   })
 }
 
-listenForWork()
+start('vegan')
+
 
 
 

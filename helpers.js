@@ -1,5 +1,6 @@
 import {firebaseRef} from './config';
 const agent = require('superagent');
+import {parse} from 'fast-html-parser';
 import osmosis from 'osmosis';
 import {headers} from './config';
 
@@ -73,18 +74,17 @@ export const findUserFromPic = (picId, term, headers) => {
   });
 };
 
-export const getUserProfile = (username, headers) => {
+export const getUserProfile = (username) => {
   return new Promise((resolve, reject) => {
     let url = `https://instagram.com/${username}`;
-    osmosis
+    agent
     .get(url)
-    .find('body')
-    .set('instagramProfile')
-    .data(instagramProfile => {
-      resolve({username, instagramProfile});
+    .set(headers)
+    .end((err, res) => {
+      if(err) {
+        reject(err)
+      }
+      resolve({instagramProfile: res.text, username})
     })
-    .error(err => {
-      reject(err);
-    });
-  });
-};
+  })
+}
