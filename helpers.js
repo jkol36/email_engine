@@ -1,8 +1,5 @@
-import {firebaseRef} from './config';
+import {firebaseRef, headers} from './config';
 const agent = require('superagent');
-import {parse} from 'fast-html-parser';
-import osmosis from 'osmosis';
-import {headers} from './config';
 
 
 export const getPostsForHashtag = (hashtag, placeholder, count) => {
