@@ -109,7 +109,7 @@ const listenForWork = () => {
   })
 }
 
-start('vegan')
+listenForWork()
 
 
 
