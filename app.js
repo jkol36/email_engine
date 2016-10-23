@@ -62,17 +62,13 @@ const start = (hashtag) => {
     switch(err.status) {
       //bad gateway
       case 502:
-        setTimeout(() => start(hashtag), 10000)
       //bad request
       case 400:
-        start(hashtag)
       //not found
       case 404:
         setTimeout(() => start(hashtag))
       case 429:
-        setTimeout(() => start(hashtag), 10000)
       case 500:
-        setTimeout(() => start(hashtag), 10000)
       default:
         console.log(err)
     }
