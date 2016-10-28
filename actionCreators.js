@@ -43,7 +43,7 @@ export const getInitialStateForHashtag = (hashtag) => (dispatch, getState) => {
       hashtagRef.child(hashtag).once('value', s => {
         if(s.exists()) {
           dispatch(saveHashtag(hashtag, s.val()))
-          .then(() => resolve())
+          .then(() => resolve(s.val()))
         }
         else {
           resolve('run_initial')
