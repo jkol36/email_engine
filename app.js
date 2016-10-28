@@ -168,6 +168,9 @@ const startHashtag = (hashtag) => {
       runInitialForHashtag(hashtag)
       .then(() => runNormalForHashtag(hashtag))
     }
+    else if(state.status === 'running') {
+      return
+    }
     else {
       runNormalForHashtag(hashtag)
     }
