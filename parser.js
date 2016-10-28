@@ -1,5 +1,4 @@
 export const parseProfile = data => {
-  console.log('got data', data)
   let { username } = data
   const extractEmails = text => {
   return text.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi);
@@ -15,14 +14,32 @@ export const parseProfile = data => {
     if (bio) {
       let emails = extractEmails(bio);
       if (emails) {
-        resolve({email: emails[0], username, createdAt:Date.now()});
+        resolve({email: emails[0], 
+          username, 
+          createdAt:Date.now(),
+          id: json.entry_data.ProfilePage[0].user.id,
+          followedBy: json.entry_data.ProfilePage[0].user.followed_by,
+          follows: json.entry_data.ProfilePage[0].user.follows
+        });
       }
       else {
-        resolve({status: 404});
+        resolve({
+          email:404,
+          createdAt: Date.now(),
+          id: json.entry_data.ProfilePage[0].user.id,
+          followedBy: json.entry_data.ProfilePage[0].user.followed_by,
+          follows: json.entry_data.ProfilePage[0].user.follows
+        });
       }
     }
     else {
-      resolve({status: 404});
+      resolve({
+        email: 404,
+        createdAt: Date.now(),
+        id: json.entry_data.ProfilePage[0].user.id,
+        followedBy: json.entry_data.ProfilePage[0].user.followed_by,
+        follows: json.entry_data.ProfilePage[0].user.follows
+      });
     }
   });
 };

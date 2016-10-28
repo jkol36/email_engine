@@ -1,20 +1,13 @@
 import {createStore, combineReducers, applyMiddleware} from 'redux';
 import thunk from 'redux-thunk';
-import {emails,
-	profilesSearched,
-	page,
-	status,
-	pictures,
-	users,
-	profiles
+import {
+  emails,
+  influencers,
+  hashtags
 } from './reducers';
 
 export const store = createStore(combineReducers({
   emails,
-  profilesSearched,
-  page,
-  status,
-  pictures,
-  users,
-  profiles
+  influencers,
+  hashtags
 }), applyMiddleware(thunk));

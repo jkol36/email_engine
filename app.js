@@ -1,101 +1,149 @@
-import firebase from 'firebase'
-import {firebaseRef, pictureCount} from './config';
+import {hashtagRef, influencerRef, pictureCount} from './config';
 import {
 	getPostsForHashtag,
   getFirstPageForHashtag,
-  getNextPageForHashtag,
   findUserFromPic,
-  getUserProfile
+  getUserProfile,
+  getFollowers,
+  getInfluencerProfile
 } from './helpers';
 import {
-  savePictures,
-  savePageInfo,
-  foundUsersFromPictures,
-  parsedUsersForEmails,
-  saveProfiles,
-  emailsFoundForHashtag,
-  gettingFirstPageForHashtag,
+  emailFoundForHashtag,
+  emailFoundForInfluencer,
+  getInitialStateForInfluencer,
+  getNextStateForInfluencer,
+  getInitialStateForHashtag,
+  getNextStateForHashtag,
+  saveInfluencer,
+  saveHashtag
 } from './actionCreators';
-import {parseProfile} from './parser';
+import { parseProfile } from './parser';
 import {store} from './store';
 
 let {dispatch, getState} = store;
-const start = (hashtag) => {
-  dispatch(gettingFirstPageForHashtag(hashtag))
-  .then(() => getFirstPageForHashtag(hashtag))
-  .then(pageId => getPostsForHashtag(hashtag, pageId, pictureCount))
-  .then((obj) => {
-    if(!obj.hasNextPage) {
-      firebaseRef.child(hashtag).child('STOPPED').child('reason').set('No more pages left', () => process.exit())
-    }
-    if(obj.posts.length === 0) {
-        firebaseRef.child(hashtag).child('LAST_PAGE_SCRAPED').remove().then(() => start(hashtag))
-      }
-    else {
-      return Promise.all([
-        dispatch(savePageInfo(hashtag, obj.nextPage)),
-        dispatch(savePictures(hashtag, obj.posts.length, obj.posts))
-      ]);
-    }
-  })
-  .then(() => Promise.map(getState().pictures, (picture) => {
-    return findUserFromPic(picture.code);
-  }))
-  .then(users => dispatch(foundUsersFromPictures(hashtag, users.length, users)))
-  .then(() => Promise.map(getState().users, (user) => {
-    return getUserProfile(user.username)
-  }))
-  .then(profiles => dispatch(saveProfiles(profiles)))
-  .then((profiles) => Promise.map(profiles, (profile) => {
-    return parseProfile(profile)
-  }))
-  .then(results => {
-    console.log(results)
-    let usersWithEmails = results.filter(result => result.status === undefined);
-    return Promise.join([
-      dispatch(parsedUsersForEmails(getState().profiles.length, hashtag)),
-      dispatch(emailsFoundForHashtag(hashtag, usersWithEmails.length, usersWithEmails))
-    ])
-  })
-  .then(() => setTimeout(() => start(hashtag), 1000))
-  .catch(err => {
-    switch(err.status) {
-      //bad gateway
-      case 502:
-      //bad request
-      case 400:
-      //not found
-      case 404:
-        setTimeout(() => start(hashtag))
-      case 429:
-      case 500:
-      default:
-        console.log(err)
-    }
-  })
-};
 
-const saveEmailsToTxtFile = () => {
-  let emails  = []
-  firebase.database().ref('igbot').child('hashtags').child('5dimes/emails').once('value', snap => {
-  if(snap.exists()) {
-    Object.keys(snap.val()).map(k => snap.val()[k]).filter(obj => {
-      obj.forEach(emailObj => {
-        if(emails.indexOf(emailObj.email.toLowerCase()) === -1 ) {
-          emails.push(emailObj.email.toLowerCase())
-        }
+const runNormalForInfluencer = (influencer) => {
+  const {followers, pageInfo } = getState().influencers[influencer]
+  Promise.all(Promise.map(followers, (follower) => {
+    return getUserProfile(follower.username)
+  }))
+  .then(userProfiles => {
+    return Promise.all(Promise.map(userProfiles, (userProfile) => {
+      return parseProfile(userProfile)
+    }))
+  })
+  .then(parsedProfiles => {
+    return Promise.all(Promise.map(parsedProfiles, (parsedProfile) => {
+      if(parsedProfile.email != 404) {
+        return dispatch(emailFoundForInfluencer(influencer, parsedProfile))
+      }
+      else {
+        return Promise.resolve(parsedProfile)
+      }
+    }))
+  })
+  .then(() => dispatch(getNextStateForInfluencer(influencer)))
+  .then(() => {
+    if(!pageInfo.hasNextPage) {
+      console.log('finished', influencer)
+      
+    }
+    else{
+      return runNormalForInfluencer(influencer)
+    }
+  })
+
+}
+
+const runInitialForInfluencer = (influencer) => {
+  return new Promise((resolve, reject) => {
+     getInfluencerProfile(influencer)
+      .then(profile => dispatch(saveInfluencer(influencer, {userId: profile.id})))
+      .then(() => getFollowers(getState().influencers[influencer].userId, 10))
+      .then(data => {
+        const {pageInfo, followers} = data
+        return dispatch(saveInfluencer(influencer, {followers, pageInfo}))
       })
-    })
-    let fs = require('fs')
-    fs.writeFile('emails.txt', emails, () => {
-      console.log('done')
-    })
-  }
-  else {
-    console.log('doesnt exist')
-  }
+      .then(() => resolve(influencer))
   })
 }
+const startInfluencer = (influencer) => {
+  dispatch(getInitialStateForInfluencer(influencer))
+  .then(state => {
+    if(state === 'run_initial') {
+      runInitialForInfluencer(influencer)
+      .then(() => runNormalForInfluencer(influencer))
+    }
+    else {
+      runNormalForInfluencer(influencer)
+      
+    }
+  })
+  .catch(err => err)
+}
+
+const runNormalForHashtag = (hashtag) => {
+  const {posts, pageInfo} = getState().hashtags[hashtag]
+  Promise.all(Promise.map(posts, (post) => {
+    return findUserFromPic(post.code, hashtag)
+  }))
+  .then(users => Promise.all(Promise.map(users, (user) => {
+    if(user != 404) {
+      return getUserProfile(user.username)
+    }
+    else {
+      Promise.resolve(user)
+    }
+  })))
+  .then(initialProfiles => {
+    const profiles = initialProfiles.filter(profile => profile != undefined)
+    return Promise.all(Promise.map(profiles, (profile) => {
+      return parseProfile(profile)
+    }))
+  })
+  .then(parsedProfiles => Promise.all(Promise.map(parsedProfiles, (parsedProfile) => {
+    if(parsedProfile.email != 404) {
+      dispatch(emailFoundForHashtag(hashtag, parsedProfile))
+    }
+    else {
+      Promise.resolve(parsedProfile)
+    }
+  })))
+  .then(() => dispatch(getNextStateForHashtag(hashtag)))
+  .then(() => {
+    if(!pageInfo.hasNextPage) {
+      console.log('finished hashtag', hashtag)
+    }
+    else {
+      return runNormalForHashtag(hashtag)
+    }
+  })
+  .catch(err => err)
+}
+const runInitialForHashtag = (hashtag) => {
+  return new Promise((resolve, reject) => {
+    getFirstPageForHashtag(hashtag)
+    .then(data =>  {
+      const { pageInfo, posts} = data
+      return dispatch(saveHashtag(hashtag, {pageInfo, posts}))
+    })
+    .then(() => resolve(hashtag))
+  })
+}
+const startHashtag = (hashtag) => {
+  dispatch(getInitialStateForHashtag(hashtag))
+  .then(state => {
+    if(state === 'run_initial') {
+      runInitialForHashtag(hashtag)
+      .then(() => runNormalForHashtag(hashtag))
+    }
+    else {
+      runNormalForHashtag(hashtag)
+    }
+  })
+  .catch(err => console.log(err))
+}
+
 
 const listenForWork = () => {
   console.log('listening for work')
@@ -105,7 +153,7 @@ const listenForWork = () => {
   })
 }
 
-listenForWork()
+startHashtag('vegan')
 
 
 

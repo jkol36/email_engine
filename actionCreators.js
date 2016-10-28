@@ -1,70 +1,149 @@
-import {firebaseRef} from './config';
+import { influencerRef, hashtagRef} from './config';
+import { getFollowers, getPostsForHashtag } from './helpers';
 import {
-  SAVE_PICTURES,
-  SAVING_PAGE_INFO,
-  FOUND_USERS_FROM_PICTURES,
-  PARSED_USERS_FOR_EMAILS,
   EMAILS_FOUND_FOR_HASHTAG,
-  GETTING_FIRST_PAGE_FOR_HASHTAG,
-  SAVE_PROFILES,
+  EMAILS_FOUND_FOR_INFLUENCER,
+  SAVE_INFLUENCER,
+  SAVE_HASHTAG,
+  DUMP_FOLLOWERS_FOR_INFLUENCER,
+  DUMP_POSTS_FOR_HASHTAG
 } from './reducers';
 
-export const savePageInfo = (hashtag, pageId) => (dispatch, getState) => {
+
+
+export const getInitialStateForInfluencer = (influencer) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
-    firebaseRef.child(hashtag).child('LAST_PAGE_SCRAPED').set(pageId, () => {
-      dispatch({
-        type: SAVING_PAGE_INFO,
-        pageId
+    if(getState().influencers[influencer] != undefined) {
+      resolve(getState().influencers[influencer])
+    }
+    else {
+      influencerRef.child(influencer).once('value', s => {
+        if(s.exists()) {
+          dispatch(saveInfluencer(influencer, s.val()))
+          .then(() => resolve())
+        }
+        else {
+          resolve('run_initial')
+        }
       })
+    }
+
+  });
+};
+export const getInitialStateForHashtag = (hashtag) => (dispatch, getState) => {
+  return new Promise((resolve, reject) => {
+    if(getState().hashtags[hashtag] != undefined) {
+      resolve(getState().hashtags[hashtag])
+    }
+    else {
+      hashtagRef.child(hashtag).once('value', s => {
+        if(s.exists()) {
+          dispatch(saveHashtag(hashtag, s.val()))
+          .then(() => resolve())
+        }
+        else {
+          resolve('run_initial')
+        }
+      })
+    }
+
+  });
+};
+
+export const getNextStateForHashtag = (hashtag) => (dispatch, getState) => {
+  return new Promise((resolve, reject) => {
+    let {pageInfo:{nextPage, lastPage, hasNextPage}, posts} = getState().hashtags[hashtag]
+    if(!hasNextPage) {
+      resolve('done')
+    }
+    else {
+      dispatch(dumpPostsForHashtag(hashtag))
+      .then(() => getPostsForHashtag(hashtag, nextPage, 10))
+      .then(data => {
+        let {pageInfo, posts} = data
+        console.log(pageInfo)
+        return dispatch(saveHashtag(hashtag, {posts, pageInfo}))
+      })
+      .then(() => resolve(hashtag))
+
+    }
+
+  })
+}
+
+export const dumpPostsForHashtag = (hashtag) => (dispatch, getState) => {
+  return new Promise((resolve, reject) => {
+    dispatch({type:DUMP_POSTS_FOR_HASHTAG, hashtag})
+    resolve()
+  })
+}
+
+
+export const saveInfluencer = (influencer, data) => (dispatch, getState) => {
+  return new Promise((resolve, reject) => {
+    influencerRef.child(influencer).update(data, () => {
+      dispatch({type: SAVE_INFLUENCER, influencer, data})
       resolve()
     })
-  });
-};
+  })
+}
 
-export const gettingFirstPageForHashtag = hashtag => (dispatch, getState) => {
+export const saveHashtag = (hashtag, data) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
-    dispatch({type: GETTING_FIRST_PAGE_FOR_HASHTAG});
-    resolve();
-  });
-};
-
-export const savePictures = (hashtag, pictureCount, pictures) => (dispatch, getState) => {
+    hashtagRef.child(hashtag).update(data, () => {
+      dispatch({type: SAVE_HASHTAG, hashtag, data})
+      resolve()
+    })
+  })
+}
+export const emailFoundForHashtag = (hashtag, email) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
-    dispatch({type: SAVE_PICTURES, pictureCount, pictures});
-    resolve()
-  });
-};
-
-export const foundUsersFromPictures = (hashtag, userCount, users) => (dispatch, getState) => {
-  return new Promise((resolve, reject) => {
-    dispatch({type: FOUND_USERS_FROM_PICTURES, users});
-    resolve();
-  });
-};
-
-export const saveProfiles = profiles => (dispatch, getState) => {
-  return new Promise((resolve, reject) => {
-    dispatch({type: SAVE_PROFILES, profiles});
-    resolve(profiles);
-  });
-};
-
-
-export const parsedUsersForEmails = (number, hashtag) => (dispatch, getState) => {
-  return new Promise((resolve, reject)=> {
-    firebaseRef.child(hashtag).child('profiles_parsed').transaction(currentValue => currentValue + number, () => {
-      dispatch({type: PARSED_USERS_FOR_EMAILS, number})
-      resolve();
-    });
-  });
-};
-export const emailsFoundForHashtag = (hashtag, emailCount, emails) => (dispatch, getState) => {
-  return new Promise((resolve, reject) => {
-      firebaseRef.child(hashtag).child('emails_found').transaction(currentValue => currentValue + emailCount, () => {
-        firebaseRef.child(hashtag).child('emails').push(emails, () => {
-        dispatch({type: EMAILS_FOUND_FOR_HASHTAG, emails});
+      hashtagRef.child(hashtag).child('emails_found').transaction(currentValue => currentValue+1, () => {
+        hashtagRef.child(hashtag).child('emails').push(email, () => {
+        dispatch({type: EMAILS_FOUND_FOR_HASHTAG, email});
         resolve();
       });
-    });
+    })
+    .catch(err => console.log(err))
   });
 };
+export const emailFoundForInfluencer = (influencer, email) => (dispatch, getState) => {
+  return new Promise((resolve, reject) => {
+      influencerRef.child(influencer).child('emails_found').transaction(currentValue => currentValue + 1, () => {
+        influencerRef.child(influencer).child('emails').push(email, () => {
+        dispatch({type: EMAILS_FOUND_FOR_INFLUENCER, influencer, email});
+        resolve();
+      });
+    })
+    .catch(err => reject(err))
+  })
+};
+
+
+
+export const dumpFollowersForInfluencer = (influencer) => (dispatch, getState) => {
+  return new Promise((resolve, reject) => {
+    dispatch({type:DUMP_FOLLOWERS_FOR_INFLUENCER, influencer})
+    resolve()
+  })
+}
+
+export const getNextStateForInfluencer = (influencer) => (dispatch, getState) => {
+  return new Promise((resolve, reject) => {
+    let {pageInfo:{nextPage, lastPage, hasNextPage}, followers, userId} = getState().influencers[influencer]
+    if(!hasNextPage) {
+      resolve('done')
+    }
+    else {
+      dispatch(dumpFollowersForInfluencer(influencer))
+      .then(() => getFollowers(userId, 10, nextPage))
+      .then(data => {
+        let {pageInfo, followers} = data
+        return dispatch(saveInfluencer(influencer, {followers, pageInfo}))
+      })
+      .then(() => resolve(influencer))
+
+    }
+
+  })
+}
