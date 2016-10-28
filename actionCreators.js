@@ -5,8 +5,10 @@ import {
   EMAILS_FOUND_FOR_INFLUENCER,
   SAVE_INFLUENCER,
   INFLUENCER_STARTED,
+  INFLUENCER_STOPPED,
   SAVE_HASHTAG,
   HASHTAG_STARTED,
+  HASHTAG_STOPPED,
   DUMP_FOLLOWERS_FOR_INFLUENCER,
   DUMP_POSTS_FOR_HASHTAG
 } from './reducers';
@@ -84,6 +86,22 @@ export const hashtagStarted = (hashtag) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
     hashtagRef.child(hashtag).child('status').set('running', () => {
       dispatch({type: HASHTAG_STARTED, hashtag})
+      resolve()
+    })
+  })
+}
+export const hashtagStopped = (hashtag) => (dispatch, getState) => {
+  return new Promise((resolve, reject) => {
+    hashtagRef.child(hashtag).child('status').set('stopped', () => {
+      dispatch({type: HASHTAG_STOPPED, hashtag})
+      resolve()
+    })
+  })
+}
+export const influencerStopped = (influencer) => (dispatch, getState) => {
+  return new Promise((resolve, reject) => {
+    influencerRef.child(influencer).child('status').set('stopped', () => {
+      dispatch({type: INFLUENCER_STOPPED, influencer})
       resolve()
     })
   })

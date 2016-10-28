@@ -5,6 +5,8 @@ export const EMAILS_FOUND_FOR_INFLUENCER = 'EMAILS_FOUND_FOR_INFLUENCER';
 export const SAVE_INFLUENCER = 'SAVE_INFLUENCER';
 export const SAVE_HASHTAG = 'SAVE_HASHTAG';
 export const INFLUENCER_STARTED = 'INFLUENCER_STARTED';
+export const INFLUENCER_STOPPED = 'INFLUENCER_STOPPED';
+export const HASHTAG_STOPPED = 'HASHTAG_STOPPED';
 export const HASHTAG_STARTED = 'HASHTAG_STARTED';
 
 export const emails = (state = {}, action) => {
@@ -31,6 +33,9 @@ export const influencers = (state={}, action) => {
     case INFLUENCER_STARTED:
       state[action.influencer] = {...state[action.influencer], ...{status:'running'} }
       return state
+    case INFLUENCER_STOPPED:
+      state[action.influencer] = {...state[action.influencer], ...{status:'stopped'} }
+      return state
     default:
       return state
   }
@@ -46,6 +51,9 @@ export const hashtags = (state={}, action) => {
       return state
     case HASHTAG_STARTED:
       state[action.hashtag] = {...state[action.hashtag], ...{status:'running'} }
+      return state
+    case HASHTAG_STOPPED:
+      state[action.hashtag] = {...state[action.hashtag], ...{status:'stopped'} }
       return state
     default:
       return state

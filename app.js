@@ -14,8 +14,11 @@ import {
   getNextStateForInfluencer,
   getInitialStateForHashtag,
   influencerStarted,
+  influencerStopped,
   getNextStateForHashtag,
   saveInfluencer,
+  hashtagStarted,
+  hashtagStopped,
   saveHashtag
 } from './actionCreators';
 import { parseProfile } from './parser';
@@ -72,6 +75,14 @@ const runInitialForInfluencer = (influencer) => {
   })
 }
 const startInfluencer = (influencer) => {
+  process.on('exit', () => {
+    dispatch(influencerStopped(influencer))
+    .then(() => process.exit())
+  })
+  process.on('SIGINT', () => {
+    dispatch(influencerStopped(influencer))
+    .then(() => process.exit())
+  })
   dispatch(getInitialStateForInfluencer(influencer))
   .then(state => {
     console.log('initial state', state)
@@ -143,6 +154,14 @@ const runInitialForHashtag = (hashtag) => {
   })
 }
 const startHashtag = (hashtag) => {
+  process.on('exit', () => {
+    dispatch(hashtagStopped(hashtag))
+    .then(() => process.exit())
+  })
+  process.on('SIGINT', () => {
+    dispatch(hashtagStopped(hashtag))
+    .then(() => process.exit())
+  })
   dispatch(getInitialStateForHashtag(hashtag))
   .then(state => {
     if(state === 'run_initial') {

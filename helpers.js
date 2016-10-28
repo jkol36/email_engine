@@ -90,7 +90,7 @@ export const getUserProfile = (username) => {
         reject(err)
       }
       resolve({instagramProfile: res.text, username});
-    });
+    })
   });
 };
 
