@@ -4,7 +4,9 @@ import {
   EMAILS_FOUND_FOR_HASHTAG,
   EMAILS_FOUND_FOR_INFLUENCER,
   SAVE_INFLUENCER,
+  INFLUENCER_STARTED,
   SAVE_HASHTAG,
+  HASHTAG_STARTED,
   DUMP_FOLLOWERS_FOR_INFLUENCER,
   DUMP_POSTS_FOR_HASHTAG
 } from './reducers';
@@ -20,7 +22,7 @@ export const getInitialStateForInfluencer = (influencer) => (dispatch, getState)
       influencerRef.child(influencer).once('value', s => {
         if(s.exists()) {
           dispatch(saveInfluencer(influencer, s.val()))
-          .then(() => resolve())
+          .then(() => resolve(s.val()))
         }
         else {
           resolve('run_initial')
@@ -70,7 +72,22 @@ export const getNextStateForHashtag = (hashtag) => (dispatch, getState) => {
 
   })
 }
-
+export const influencerStarted = (influencer) => (dispatch, getState) => {
+  return new Promise((resolve, reject) => {
+    influencerRef.child(influencer).child('status').set('running', () => {
+      dispatch({type: INFLUENCER_STARTED, influencer})
+      resolve()
+    })
+  })
+}
+export const hashtagStarted = (hashtag) => (dispatch, getState) => {
+  return new Promise((resolve, reject) => {
+    hashtagRef.child(hashtag).child('status').set('running', () => {
+      dispatch({type: HASHTAG_STARTED, hashtag})
+      resolve()
+    })
+  })
+}
 export const dumpPostsForHashtag = (hashtag) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
     dispatch({type:DUMP_POSTS_FOR_HASHTAG, hashtag})

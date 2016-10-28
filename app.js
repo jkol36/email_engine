@@ -13,6 +13,7 @@ import {
   getInitialStateForInfluencer,
   getNextStateForInfluencer,
   getInitialStateForHashtag,
+  influencerStarted,
   getNextStateForHashtag,
   saveInfluencer,
   saveHashtag
@@ -24,9 +25,12 @@ let {dispatch, getState} = store;
 
 const runNormalForInfluencer = (influencer) => {
   const {followers, pageInfo } = getState().influencers[influencer]
-  Promise.all(Promise.map(followers, (follower) => {
-    return getUserProfile(follower.username)
-  }))
+  dispatch(influencerStarted(influencer))
+  .then(() => {
+    return Promise.all(Promise.map(followers, (follower) => {
+      return getUserProfile(follower.username)
+    }))
+  })
   .then(userProfiles => {
     return Promise.all(Promise.map(userProfiles, (userProfile) => {
       return parseProfile(userProfile)
@@ -70,23 +74,31 @@ const runInitialForInfluencer = (influencer) => {
 const startInfluencer = (influencer) => {
   dispatch(getInitialStateForInfluencer(influencer))
   .then(state => {
+    console.log('initial state', state)
     if(state === 'run_initial') {
       runInitialForInfluencer(influencer)
       .then(() => runNormalForInfluencer(influencer))
+    }
+    else if(state.status == 'running') {
+      console.log('already running')
+      return
     }
     else {
       runNormalForInfluencer(influencer)
       
     }
   })
-  .catch(err => err)
+  .catch(err => setTimeout(() => startInfluencer(influencer), 1000))
 }
 
 const runNormalForHashtag = (hashtag) => {
   const {posts, pageInfo} = getState().hashtags[hashtag]
-  Promise.all(Promise.map(posts, (post) => {
-    return findUserFromPic(post.code, hashtag)
-  }))
+  dispatch(hashtagStarted(hashtag))
+  .then(() => {
+    return Promise.all(Promise.map(posts, (post) => {
+      return findUserFromPic(post.code, hashtag)
+    }))
+  })
   .then(users => Promise.all(Promise.map(users, (user) => {
     if(user != 404) {
       return getUserProfile(user.username)
@@ -141,7 +153,7 @@ const startHashtag = (hashtag) => {
       runNormalForHashtag(hashtag)
     }
   })
-  .catch(err => console.log(err))
+  .catch(err => setTimeout(() => startHashtag(hashtag), 1000))
 }
 
 
@@ -153,7 +165,7 @@ const listenForWork = () => {
   })
 }
 
-startHashtag('vegan')
+startInfluencer('pokerstars')
 
 
 
