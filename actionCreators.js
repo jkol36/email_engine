@@ -97,7 +97,7 @@ export const influencerStarted = (influencer) => (dispatch, getState) => {
     })
   })
 }
-export const influencerHaltedWithError = (influencer, error) => (dispatch, getState) => {
+export const influencerHaltedWithError = (influencer, error) => {
   return new Promise((resolve, reject) => {
     influencerRef.child(influencer).child('status').set('halted because of error', () => {
       influencerRef.child(influencer).child('error').update({error}, () => {
@@ -122,7 +122,7 @@ export const hashtagStopped = (hashtag) => (dispatch, getState) => {
     })
   })
 }
-export const hashtagHaltedWithError = (hashtag, error) => (dispatch, getState) => {
+export const hashtagHaltedWithError = (hashtag, error) => {
   return new Promise((resolve, reject) => {
     hashtagRef.child(hashtag).child('status').set('halted because of error', () => {
       hashtagRef.child(hashtag).child('error').update({error}, () => {
