@@ -1,4 +1,4 @@
-import {hashtagRef, influencerRef, pictureCount} from './config';
+import {hashtagRef, influencerRef, pictureCount, followerCount} from './config';
 import {
 	getPostsForHashtag,
   getFirstPageForHashtag,
@@ -8,6 +8,8 @@ import {
   getInfluencerProfile
 } from './helpers';
 import {
+  anotherProfileParsed,
+  anotherFollowerParsed,
   emailFoundForHashtag,
   emailFoundForInfluencer,
   getInitialStateForInfluencer,
@@ -15,10 +17,12 @@ import {
   getInitialStateForHashtag,
   influencerStarted,
   influencerStopped,
+  influencerHaltedWithError,
   getNextStateForHashtag,
   saveInfluencer,
   hashtagStarted,
   hashtagStopped,
+  hashtagHaltedWithError,
   saveHashtag
 } from './actionCreators';
 import { parseProfile } from './parser';
@@ -27,7 +31,9 @@ import {store} from './store';
 let {dispatch, getState} = store;
 
 const runNormalForInfluencer = (influencer) => {
-  const {followers, pageInfo } = getState().influencers[influencer]
+  const {followers, pageInfo, followersCount, followersParsed } = getState().influencers[influencer]
+  const percentageDone = followersParsed / followersCount.count
+  console.log(percentageDone)
   dispatch(influencerStarted(influencer))
   .then(() => {
     return Promise.all(Promise.map(followers, (follower) => {
@@ -36,11 +42,15 @@ const runNormalForInfluencer = (influencer) => {
   })
   .then(userProfiles => {
     return Promise.all(Promise.map(userProfiles, (userProfile) => {
-      return parseProfile(userProfile)
+      if(userProfile != 404) {
+        return parseProfile(userProfile)
+      }
+      else Promise.resolve(userProfile)
     }))
   })
   .then(parsedProfiles => {
     return Promise.all(Promise.map(parsedProfiles, (parsedProfile) => {
+      dispatch(anotherFollowerParsed(influencer))
       if(parsedProfile.email != 404) {
         return dispatch(emailFoundForInfluencer(influencer, parsedProfile))
       }
@@ -52,12 +62,17 @@ const runNormalForInfluencer = (influencer) => {
   .then(() => dispatch(getNextStateForInfluencer(influencer)))
   .then(() => {
     if(!pageInfo.hasNextPage) {
-      console.log('finished', influencer)
+      process.exit()
       
     }
     else{
-      return runNormalForInfluencer(influencer)
+      Promise.delay(100).then(runNormalForInfluencer(influencer))
     }
+  })
+  .catch(err => {
+    dispatch(influencerHaltedWithError(influencer, err.stack))
+    .then(() => Promise.delay(1000))
+    .then(() => runNormalForInfluencer(influencer))
   })
 
 }
@@ -65,13 +80,17 @@ const runNormalForInfluencer = (influencer) => {
 const runInitialForInfluencer = (influencer) => {
   return new Promise((resolve, reject) => {
      getInfluencerProfile(influencer)
-      .then(profile => dispatch(saveInfluencer(influencer, {userId: profile.id})))
-      .then(() => getFollowers(getState().influencers[influencer].userId, 10))
+      .then(profile => dispatch(saveInfluencer(influencer, 
+        {
+          userId:profile.id,
+          followersCount: profile.followedBy,
+        })))
+      .then(() => getFollowers(getState().influencers[influencer].userId, followerCount))
       .then(data => {
-        const {pageInfo, followers} = data
-        return dispatch(saveInfluencer(influencer, {followers, pageInfo}))
+        return dispatch(saveInfluencer(influencer, data))
       })
       .then(() => resolve(influencer))
+      .catch(err => console.log('runInitialForInfluencer caught err', err))
   })
 }
 const startInfluencer = (influencer) => {
@@ -85,7 +104,6 @@ const startInfluencer = (influencer) => {
   })
   dispatch(getInitialStateForInfluencer(influencer))
   .then(state => {
-    console.log('initial state', state)
     if(state === 'run_initial') {
       runInitialForInfluencer(influencer)
       .then(() => runNormalForInfluencer(influencer))
@@ -99,7 +117,6 @@ const startInfluencer = (influencer) => {
       
     }
   })
-  .catch(err => setTimeout(() => startInfluencer(influencer), 1000))
 }
 
 const runNormalForHashtag = (hashtag) => {
@@ -125,6 +142,7 @@ const runNormalForHashtag = (hashtag) => {
     }))
   })
   .then(parsedProfiles => Promise.all(Promise.map(parsedProfiles, (parsedProfile) => {
+    dispatch(anotherProfileParsed(hashtag))
     if(parsedProfile.email != 404) {
       dispatch(emailFoundForHashtag(hashtag, parsedProfile))
     }
@@ -135,13 +153,16 @@ const runNormalForHashtag = (hashtag) => {
   .then(() => dispatch(getNextStateForHashtag(hashtag)))
   .then(() => {
     if(!pageInfo.hasNextPage) {
-      console.log('finished hashtag', hashtag)
+      process.exit()
     }
     else {
       return runNormalForHashtag(hashtag)
     }
   })
-  .catch(err => err)
+  .catch(err => {
+    dispatch(hashtagHaltedWithError(hashtag, err.stack))
+    Promise.delay(100).then(startHashtag(hashtag))
+  })
 }
 const runInitialForHashtag = (hashtag) => {
   return new Promise((resolve, reject) => {
@@ -175,7 +196,6 @@ const startHashtag = (hashtag) => {
       runNormalForHashtag(hashtag)
     }
   })
-  .catch(err => setTimeout(() => startHashtag(hashtag), 1000))
 }
 
 
@@ -187,7 +207,7 @@ const listenForWork = () => {
   })
 }
 
-startInfluencer('pokerstars')
+startHashtag('startups')
 
 
 

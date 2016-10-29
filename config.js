@@ -22,4 +22,5 @@ export const headers = {
 export const hashtagRef = firebase.database().ref('igbot').child('hashtags');
 export const influencerRef = firebase.database().ref('igbot').child('influencers');
 export const pictureCount = 12
+export const followerCount = 100
 global.Promise = require('bluebird');

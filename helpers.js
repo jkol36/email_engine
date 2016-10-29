@@ -89,7 +89,12 @@ export const getUserProfile = (username) => {
       if(!!err) {
         reject(err)
       }
-      resolve({instagramProfile: res.text, username});
+      else if(res) {
+        resolve({instagramProfile: res.text, username});
+      }
+      else {
+        resolve(404)
+      }
     })
   });
 };

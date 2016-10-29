@@ -8,6 +8,8 @@ export const INFLUENCER_STARTED = 'INFLUENCER_STARTED';
 export const INFLUENCER_STOPPED = 'INFLUENCER_STOPPED';
 export const HASHTAG_STOPPED = 'HASHTAG_STOPPED';
 export const HASHTAG_STARTED = 'HASHTAG_STARTED';
+export const ANOTHER_FOLLOWER_PARSED = 'ANOTHER_FOLLOWER_PARSED';
+export const ANOTHER_PROFILE_PARSED = 'ANOTHER_PROFILE_PARSED';
 
 export const emails = (state = {}, action) => {
   switch (action.type) {
@@ -36,6 +38,10 @@ export const influencers = (state={}, action) => {
     case INFLUENCER_STOPPED:
       state[action.influencer] = {...state[action.influencer], ...{status:'stopped'} }
       return state
+    case ANOTHER_FOLLOWER_PARSED:
+      const previousCount = state[action.influencer].followersParsed
+      state[action.influencer] = {...state[action.influencer], ...{followersParsed:previousCount+1}}
+      return state
     default:
       return state
   }
@@ -55,6 +61,9 @@ export const hashtags = (state={}, action) => {
     case HASHTAG_STOPPED:
       state[action.hashtag] = {...state[action.hashtag], ...{status:'stopped'} }
       return state
+    case ANOTHER_PROFILE_PARSED:
+      const previousCount = state[action.hashtag].profilesParsed
+      state[action.hashtag] = {...state[action.hashtag], ...{profilesParsed:previousCount+1}}
     default:
       return state
   }
