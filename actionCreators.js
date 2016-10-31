@@ -1,4 +1,3 @@
-import moment from 'moment'
 import { influencerRef, hashtagRef, followerCount} from './config';
 import { getFollowers, getPostsForHashtag } from './helpers';
 import {
