@@ -1,4 +1,11 @@
-import {hashtagRef, influencerRef, pictureCount, followerCount} from './config';
+import firebase from 'firebase'
+import {
+  hashtagRef, 
+  influencerRef, 
+  pictureCount, 
+  followerCount, 
+  workRef
+} from './config';
 import {
 	getPostsForHashtag,
   getFirstPageForHashtag,
@@ -36,20 +43,20 @@ const runNormalForInfluencer = (influencer) => {
   console.log(percentageDone)
   dispatch(influencerStarted(influencer))
   .then(() => {
-    return Promise.all(Promise.map(followers, (follower) => {
+    return Promise.map(followers, (follower) => {
       return getUserProfile(follower.username)
-    }))
+    })
   })
   .then(userProfiles => {
-    return Promise.all(Promise.map(userProfiles, (userProfile) => {
+    return Promise.map(userProfiles, (userProfile) => {
       if(userProfile != 404) {
         return parseProfile(userProfile)
       }
       else Promise.resolve(userProfile)
-    }))
+    })
   })
   .then(parsedProfiles => {
-    return Promise.all(Promise.map(parsedProfiles, (parsedProfile) => {
+    return Promise.map(parsedProfiles, (parsedProfile) => {
       dispatch(anotherFollowerParsed(influencer))
       if(parsedProfile.email != 404) {
         return dispatch(emailFoundForInfluencer(influencer, parsedProfile))
@@ -57,7 +64,7 @@ const runNormalForInfluencer = (influencer) => {
       else {
         return Promise.resolve(parsedProfile)
       }
-    }))
+    })
   })
   .then(() => dispatch(getNextStateForInfluencer(influencer)))
   .then(() => {
@@ -66,13 +73,12 @@ const runNormalForInfluencer = (influencer) => {
       
     }
     else{
-      Promise.delay(100).then(runNormalForInfluencer(influencer))
+      runNormalForInfluencer(influencer)
     }
   })
   .catch(err => {
     dispatch(influencerHaltedWithError(influencer, err.stack))
-    .then(() => Promise.delay(1000))
-    .then(() => runNormalForInfluencer(influencer))
+    Promise.delay(10).then(runNormalForInfluencer(influencer))
   })
 
 }
@@ -94,14 +100,6 @@ const runInitialForInfluencer = (influencer) => {
   })
 }
 const startInfluencer = (influencer) => {
-  process.on('exit', () => {
-    dispatch(influencerStopped(influencer))
-    .then(() => process.exit())
-  })
-  process.on('SIGINT', () => {
-    dispatch(influencerStopped(influencer))
-    .then(() => process.exit())
-  })
   dispatch(getInitialStateForInfluencer(influencer))
   .then(state => {
     if(state === 'run_initial') {
@@ -110,7 +108,7 @@ const startInfluencer = (influencer) => {
     }
     else if(state.status == 'running') {
       console.log('already running')
-      return
+      dispatch(influencerHaltedWithError(influencer, 'already running'))
     }
     else {
       runNormalForInfluencer(influencer)
@@ -175,14 +173,6 @@ const runInitialForHashtag = (hashtag) => {
   })
 }
 const startHashtag = (hashtag) => {
-  process.on('exit', () => {
-    dispatch(hashtagStopped(hashtag))
-    .then(() => process.exit())
-  })
-  process.on('SIGINT', () => {
-    dispatch(hashtagStopped(hashtag))
-    .then(() => process.exit())
-  })
   dispatch(getInitialStateForHashtag(hashtag))
   .then(state => {
     if(state === 'run_initial') {
@@ -190,7 +180,7 @@ const startHashtag = (hashtag) => {
       .then(() => runNormalForHashtag(hashtag))
     }
     else if(state.status === 'running') {
-      return
+      dispatch(hashtagHaltedWithError(hashtag, 'already running'))
     }
     else {
       runNormalForHashtag(hashtag)
@@ -200,14 +190,35 @@ const startHashtag = (hashtag) => {
 
 
 const listenForWork = () => {
-  console.log('listening for work')
-  firebase.database().ref('igbot').child('work-to-do').on('child_added', snap => {
-    firebase.database().ref('igbot').child('work-to-do').child(snap.key).remove()
-    .then(() => start(snap.val().hashtag))
+  process.on('exit', (message) => {
+    console.log('exiting with', message)
+  })
+  process.on('sigint', (message) => {
+    console.log('terminated exiting with', message)
+  })
+  process.on('uncaughtException', (message) => {
+    console.log('uncaught exception, exiting with ', message)
+  })
+  workRef.child('influencers').once('value', snap => {
+    if(snap.exists()) {
+      Object.keys(snap.val()).map(k => startInfluencer(snap.val()[k].query))
+    }
+  })
+  workRef.child('hashtags').once('value', snap => {
+    if(snap.exists()) {
+      Object.keys(snap.val()).map(k => startHashtag(snap.val()[k].query))
+    }
+  })
+  workRef.child('influencers').on('child_added', snap => {
+    startInfluencer(snap.val().query)
+  })
+  workRef.child('hashtags').on('child_added', snap => {
+    startHashtag(snap.val().query)
   })
 }
 
-startHashtag('startups')
+listenForWork()
+
 
 
 
