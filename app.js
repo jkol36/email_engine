@@ -1,3 +1,4 @@
+import moment from 'moment'
 import firebase from 'firebase'
 import {
   hashtagRef, 
@@ -38,49 +39,41 @@ import {store} from './store';
 let {dispatch, getState} = store;
 
 const runNormalForInfluencer = (influencer) => {
-  const {followers, pageInfo, followersCount, followersParsed } = getState().influencers[influencer]
-  const percentageDone = followersParsed / followersCount.count
-  console.log(percentageDone)
-  dispatch(influencerStarted(influencer))
-  .then(() => {
-    return Promise.map(followers, (follower) => {
-      return getUserProfile(follower.username)
+  return new Promise((resolve, reject) => {
+    const {followers, pageInfo, followersCount, followersParsed } = getState().influencers[influencer]
+    const percentageDone = followersParsed / followersCount.count
+    console.log(percentageDone)
+    dispatch(influencerStarted(influencer))
+    .then(dispatch(saveInfluencer(influencer, {lastRun:Date.now()})))
+    .then(() => {
+      return Promise.map(followers, (follower) => {
+        return getUserProfile(follower.username)
+      })
     })
-  })
-  .then(userProfiles => {
-    return Promise.map(userProfiles, (userProfile) => {
-      if(userProfile != 404) {
-        return parseProfile(userProfile)
-      }
-      else Promise.resolve(userProfile)
+    .map(parseProfile)
+    .then(parsedProfiles => {
+      return Promise.map(parsedProfiles, (parsedProfile) => {
+        dispatch(anotherFollowerParsed(influencer))
+        if(parsedProfile.email != 404) {
+          return dispatch(emailFoundForInfluencer(influencer, parsedProfile))
+        }
+        else {
+          return Promise.resolve(parsedProfile)
+        }
+      })
     })
-  })
-  .then(parsedProfiles => {
-    return Promise.map(parsedProfiles, (parsedProfile) => {
-      dispatch(anotherFollowerParsed(influencer))
-      if(parsedProfile.email != 404) {
-        return dispatch(emailFoundForInfluencer(influencer, parsedProfile))
-      }
-      else {
-        return Promise.resolve(parsedProfile)
-      }
-    })
-  })
-  .then(() => dispatch(getNextStateForInfluencer(influencer)))
-  .then(() => {
-    if(!pageInfo.hasNextPage) {
-      process.exit()
-      
-    }
-    else{
-      runNormalForInfluencer(influencer)
-    }
-  })
-  .catch(err => {
-    dispatch(influencerHaltedWithError(influencer, err.stack))
-    Promise.delay(10).then(runNormalForInfluencer(influencer))
-  })
+    .then(() => dispatch(getNextStateForInfluencer(influencer)))
+    .then(() => {
+      if(!pageInfo.hasNextPage) {
 
+        
+      }
+      else{
+        runNormalForInfluencer(influencer)
+      }
+    })
+    .catch(err => reject(err))
+  })
 }
 
 const runInitialForInfluencer = (influencer) => {
@@ -96,70 +89,81 @@ const runInitialForInfluencer = (influencer) => {
         return dispatch(saveInfluencer(influencer, data))
       })
       .then(() => resolve(influencer))
-      .catch(err => console.log('runInitialForInfluencer caught err', err))
   })
 }
 const startInfluencer = (influencer) => {
-  dispatch(getInitialStateForInfluencer(influencer))
-  .then(state => {
-    if(state === 'run_initial') {
-      runInitialForInfluencer(influencer)
-      .then(() => runNormalForInfluencer(influencer))
-    }
-    else if(state.status == 'running') {
-      console.log('already running')
-      dispatch(influencerHaltedWithError(influencer, 'already running'))
-    }
-    else {
-      runNormalForInfluencer(influencer)
-      
-    }
+  return new Promise((resolve, reject) => {
+     dispatch(getInitialStateForInfluencer(influencer))
+    .then(state => {
+      if(!!state.lastRun) {
+          runInitialForInfluencer(influencer).then(runNormalForInfluencer(influencer))
+        }
+      else if(state === 'run_initial') {
+        runInitialForInfluencer(influencer)
+        .then(() => runNormalForInfluencer(influencer))
+        .then(resolve(influencer))
+      }
+      else {
+        runNormalForInfluencer(influencer)
+        .then(resolve(influencer))
+      }
+    })
+    .catch(err => reject(err))
   })
 }
 
 const runNormalForHashtag = (hashtag) => {
   const {posts, pageInfo} = getState().hashtags[hashtag]
-  dispatch(hashtagStarted(hashtag))
-  .then(() => {
-    return Promise.all(Promise.map(posts, (post) => {
-      return findUserFromPic(post.code, hashtag)
-    }))
-  })
-  .then(users => Promise.all(Promise.map(users, (user) => {
-    if(user != 404) {
-      return getUserProfile(user.username)
-    }
-    else {
-      Promise.resolve(user)
-    }
-  })))
-  .then(initialProfiles => {
-    const profiles = initialProfiles.filter(profile => profile != undefined)
-    return Promise.all(Promise.map(profiles, (profile) => {
-      return parseProfile(profile)
-    }))
-  })
-  .then(parsedProfiles => Promise.all(Promise.map(parsedProfiles, (parsedProfile) => {
-    dispatch(anotherProfileParsed(hashtag))
-    if(parsedProfile.email != 404) {
-      dispatch(emailFoundForHashtag(hashtag, parsedProfile))
-    }
-    else {
-      Promise.resolve(parsedProfile)
-    }
-  })))
-  .then(() => dispatch(getNextStateForHashtag(hashtag)))
-  .then(() => {
-    if(!pageInfo.hasNextPage) {
-      process.exit()
-    }
-    else {
-      return runNormalForHashtag(hashtag)
-    }
-  })
-  .catch(err => {
-    dispatch(hashtagHaltedWithError(hashtag, err.stack))
-    Promise.delay(100).then(startHashtag(hashtag))
+  return new Promise((resolve, reject) => {
+    dispatch(hashtagStarted(hashtag))
+    .then(dispatch(saveHashtag(hashtag, {lastRun:Date.now()})))
+    .then(() => {
+      return Promise.all(Promise.map(posts, (post) => {
+        return findUserFromPic(post.code, hashtag)
+      }))
+    })
+    .then(users => Promise.all(Promise.map(users, (user) => {
+      if(user != 404) {
+        return getUserProfile(user.username)
+      }
+      else {
+        Promise.resolve(user)
+      }
+    })))
+    .then(initialProfiles => {
+      const profiles = initialProfiles.filter(profile => profile != undefined)
+      return Promise.all(Promise.map(profiles, (profile) => {
+        return parseProfile(profile)
+      }))
+    })
+    .then(parsedProfiles => Promise.all(Promise.map(parsedProfiles, (parsedProfile) => {
+      dispatch(anotherProfileParsed(hashtag))
+      if(parsedProfile.email != 404) {
+        dispatch(emailFoundForHashtag(hashtag, parsedProfile))
+      }
+      else {
+        Promise.resolve(parsedProfile)
+      }
+    })))
+    .then(() => dispatch(getNextStateForHashtag(hashtag)))
+    .then(() => {
+      if(!pageInfo.hasNextPage) {
+        dispatch(hashtagHaltedWithError(hashtag, 'no more posts to scrape'))
+      }
+      else {
+        return runNormalForHashtag(hashtag)
+      }
+    })
+    .catch(err => {
+      if(getState().hashtags[hashtag].pageInfo.hasNextPage === false) {
+        dispatch(hashtagHaltedWithError(hashtag, 'no more pages to scrape'))
+        .then(() => resolve(`finished hashtag ${hashtag}`))
+      }
+      else {
+        dispatch(hashtagHaltedWithError(hashtag, 'Restarting in 1000 ms'))
+        Promise.delay(1000).then(startHashtag(hashtag))
+      }
+    })
   })
 }
 const runInitialForHashtag = (hashtag) => {
@@ -173,40 +177,42 @@ const runInitialForHashtag = (hashtag) => {
   })
 }
 const startHashtag = (hashtag) => {
-  dispatch(getInitialStateForHashtag(hashtag))
-  .then(state => {
-    if(state === 'run_initial') {
-      runInitialForHashtag(hashtag)
-      .then(() => runNormalForHashtag(hashtag))
-    }
-    else if(state.status === 'running') {
-      dispatch(hashtagHaltedWithError(hashtag, 'already running'))
-    }
-    else {
-      runNormalForHashtag(hashtag)
-    }
+  console.log('starting', hashtag)
+  return new Promise((resolve, reject) => {
+    dispatch(getInitialStateForHashtag(hashtag))
+    .then(state => {
+      if(state === 'run_initial') {
+        runInitialForHashtag(hashtag)
+        .then(() => runNormalForHashtag(hashtag))
+        .then(() => console.log('finished hashtag', hashtag))
+      }
+      else {
+        runNormalForHashtag(hashtag)
+        .then(resolve)
+      }
+    })
   })
 }
 
 
 const listenForWork = () => {
-  process.on('exit', (message) => {
-    console.log('exiting with', message)
-  })
-  process.on('sigint', (message) => {
-    console.log('terminated exiting with', message)
-  })
-  process.on('uncaughtException', (message) => {
-    console.log('uncaught exception, exiting with ', message)
-  })
+  console.log('listening for work')
   workRef.child('influencers').once('value', snap => {
     if(snap.exists()) {
-      Object.keys(snap.val()).map(k => startInfluencer(snap.val()[k].query))
+      Object.keys(snap.val()).map(k => {
+        let query = snap.val()[k].query
+        workRef.child('influencers').child(k).remove()
+        .then(() => startInfluencer(query))
+      })
     }
   })
   workRef.child('hashtags').once('value', snap => {
     if(snap.exists()) {
-      Object.keys(snap.val()).map(k => startHashtag(snap.val()[k].query))
+      Object.keys(snap.val()).map(k => {
+        let query = snap.val()[k].query
+        startHashtag(query)
+        .then(console.log('work finished'))
+    })
     }
   })
   workRef.child('influencers').on('child_added', snap => {
@@ -214,12 +220,11 @@ const listenForWork = () => {
   })
   workRef.child('hashtags').on('child_added', snap => {
     startHashtag(snap.val().query)
+    .then(console.log('work finished for hashtag', snap.val().query))
   })
 }
 
 listenForWork()
-
-
 
 
 

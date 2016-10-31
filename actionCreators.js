@@ -1,3 +1,4 @@
+import moment from 'moment'
 import { influencerRef, hashtagRef, followerCount} from './config';
 import { getFollowers, getPostsForHashtag } from './helpers';
 import {
@@ -44,6 +45,9 @@ export const getInitialStateForHashtag = (hashtag) => (dispatch, getState) => {
     else {
       hashtagRef.child(hashtag).once('value', s => {
         if(s.exists()) {
+          //check to see if hasNextPage is false. If it's false, check the time the hashtag was last run
+          //if the difference btween the time now and the time the hashtag was last run is more than 12 hours, 
+          //run again.
           dispatch(saveHashtag(hashtag, s.val()))
           .then(() => resolve(s.val()))
         }
@@ -74,7 +78,7 @@ export const getNextStateForHashtag = (hashtag) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
     let {pageInfo:{nextPage, lastPage, hasNextPage}, posts} = getState().hashtags[hashtag]
     if(!hasNextPage) {
-      resolve('done')
+      dispatch(saveHashtag(hashtag, {hasNextPage})).then(resolve('done'))
     }
     else {
       dispatch(dumpPostsForHashtag(hashtag))
@@ -99,7 +103,7 @@ export const influencerStarted = (influencer) => (dispatch, getState) => {
 }
 export const influencerHaltedWithError = (influencer, error) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
-    influencerRef.child(influencer).child('status').set('halted because of error', () => {
+    influencerRef.child(influencer).child('status').set(error, () => {
       influencerRef.child(influencer).child('error').update({error}, () => {
         resolve()
       })
@@ -124,7 +128,7 @@ export const hashtagStopped = (hashtag) => (dispatch, getState) => {
 }
 export const hashtagHaltedWithError = (hashtag, error) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
-    hashtagRef.child(hashtag).child('status').set('halted because of error', () => {
+    hashtagRef.child(hashtag).child('status').set(error, () => {
       hashtagRef.child(hashtag).child('error').update({error}, () => {
         resolve()
       })
@@ -200,7 +204,7 @@ export const getNextStateForInfluencer = (influencer) => (dispatch, getState) =>
   return new Promise((resolve, reject) => {
     let {pageInfo:{nextPage, lastPage, hasNextPage}, followers, userId} = getState().influencers[influencer]
     if(!hasNextPage) {
-      resolve('done')
+      dispatch(saveInfluencer(influencer, {hasNextPage})).then(resolve('done'))
     }
     else {
       dispatch(dumpFollowersForInfluencer(influencer))
