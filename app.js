@@ -197,14 +197,7 @@ const startHashtag = (hashtag) => {
 }
 
 
-let hashtag = {
-  id: 'testingasd',
-  query: 'startups'
-}
-let influencer = {
-  id: 'asdasdasj',
-  query: 'jkol36'
-}
+
 const start = () => {
   firebase.database().ref('igbot/queries').on('child_added', snap => {
     Object.keys(snap.val()).map(k => {
