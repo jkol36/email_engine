@@ -12,7 +12,8 @@ import {
   findUserFromPic,
   getUserProfile,
   getFollowers,
-  getInfluencerProfile
+  getInfluencerProfile,
+  getSuggesstions
 } from './helpers';
 import {
   anotherProfileParsed,
@@ -38,8 +39,9 @@ import {store} from './store';
 let {dispatch, getState} = store;
 
 const runNormalForInfluencer = (influencer) => {
+  console.log('running normail for influencer')
   return new Promise((resolve, reject) => {
-    const {followers, pageInfo, followersCount, followersParsed } = getState().influencers[influencer]
+    const {followers, pageInfo, followersCount, followersParsed } = getState().influencers[influencer.id]
     const percentageDone = followersParsed / followersCount.count
     console.log(percentageDone)
     dispatch(influencerStarted(influencer))
@@ -76,6 +78,7 @@ const runNormalForInfluencer = (influencer) => {
 }
 
 const runInitialForInfluencer = (influencer) => {
+  console.log('running inital for influencer', influencer)
   return new Promise((resolve, reject) => {
      getInfluencerProfile(influencer)
       .then(profile => dispatch(saveInfluencer(influencer, 
@@ -83,7 +86,7 @@ const runInitialForInfluencer = (influencer) => {
           userId:profile.id,
           followersCount: profile.followedBy,
         })))
-      .then(() => getFollowers(getState().influencers[influencer].userId, followerCount))
+      .then(() => getFollowers(getState().influencers[influencer.id].userId, followerCount))
       .then(data => {
         return dispatch(saveInfluencer(influencer, data))
       })
@@ -112,13 +115,13 @@ const startInfluencer = (influencer) => {
 }
 
 const runNormalForHashtag = (hashtag) => {
-  const {posts, pageInfo} = getState().hashtags[hashtag]
+  const {posts, pageInfo} = getState().hashtags[hashtag.id]
   return new Promise((resolve, reject) => {
     dispatch(hashtagStarted(hashtag))
     .then(dispatch(saveHashtag(hashtag, {lastRun:Date.now()})))
     .then(() => {
       return Promise.all(Promise.map(posts, (post) => {
-        return findUserFromPic(post.code, hashtag)
+        return findUserFromPic(post.code, hashtag.id)
       }))
     })
     .then(users => Promise.all(Promise.map(users, (user) => {
@@ -156,7 +159,7 @@ const runNormalForHashtag = (hashtag) => {
     .catch(err => {
       if(getState().hashtags[hashtag].pageInfo.hasNextPage === false) {
         dispatch(hashtagHaltedWithError(hashtag, 'no more pages to scrape'))
-        .then(() => resolve(`finished hashtag ${hashtag}`))
+        .then(() => resolve(`finished hashtag ${hashtag.id}`))
       }
       else {
         dispatch(hashtagHaltedWithError(hashtag, 'Restarting in 1000 ms'))
@@ -167,10 +170,10 @@ const runNormalForHashtag = (hashtag) => {
 }
 const runInitialForHashtag = (hashtag) => {
   return new Promise((resolve, reject) => {
-    getFirstPageForHashtag(hashtag)
+    getFirstPageForHashtag(hashtag.query)
     .then(data =>  {
       const { pageInfo, posts} = data
-      return dispatch(saveHashtag(hashtag, {pageInfo, posts}))
+      return dispatch(saveHashtag(hashtag, {pageInfo, posts, hashtag}))
     })
     .then(() => resolve(hashtag))
   })
@@ -194,36 +197,34 @@ const startHashtag = (hashtag) => {
 }
 
 
-const listenForWork = () => {
-  console.log('listening for work')
-  workRef.child('influencers').once('value', snap => {
-    if(snap.exists()) {
-      Object.keys(snap.val()).map(k => {
-        let query = snap.val()[k].query
-        workRef.child('influencers').child(k).remove()
-        .then(() => startInfluencer(query))
-      })
-    }
-  })
-  workRef.child('hashtags').once('value', snap => {
-    if(snap.exists()) {
-      Object.keys(snap.val()).map(k => {
-        let query = snap.val()[k].query
-        startHashtag(query)
-        .then(console.log('work finished'))
+
+const start = () => {
+  firebase.database().ref('igbot/queries').on('child_added', snap => {
+    Object.keys(snap.val()).map(k => {
+      if(snap.val()[k].status === 'needs love') {
+        firebase.database().ref(`igbot/queries/${snap.key}/${k}/status`).set('done')
+        switch(snap.val()[k].type) {
+          case 'influencer':
+            startInfluencer(snap.val()[k])
+          case 'hashtag':
+            startHashtag(snap.val()[k])
+        }
+      }
     })
-    }
   })
-  workRef.child('influencers').on('child_added', snap => {
-    startInfluencer(snap.val().query)
+  firebase.database().ref('igbot/querySuggestions').on('child_added', snap => {
+    getSuggesstions(snap.val().input)
+    .then(suggestions => {
+      console.log(suggestions)
+      firebase.database().ref(`igbot/querySuggestionResults/${snap.val().postRef}`).set(suggestions) 
+    })
   })
-  workRef.child('hashtags').on('child_added', snap => {
-    startHashtag(snap.val().query)
-    .then(console.log('work finished for hashtag', snap.val().query))
-  })
+  setInterval(() => firebase.database().ref('igbot/querySuggestions').set(null, () => {
+    firebase.database().ref('igbot/querySuggestionResults').set(null)
+  }), 10000)
 }
 
-listenForWork()
+start()
 
 
 

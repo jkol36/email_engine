@@ -51,6 +51,34 @@ export const getFirstPageForHashtag = (hashtag) => {
   })
 }
 
+export const getSuggesstions = (term) => {
+  return new Promise((resolve, reject) => {
+    let url = `https://www.instagram.com/web/search/topsearch/?context=blended&query=${term}&rank_token=0.18773450985527074`
+    let newHeaders = {
+      'origin': 'https://www.instagram.com',
+      'accept-encoding': 'gzip, deflate',
+      'accept-language': 'en-US,en;q=0.8',
+      'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36',
+      'x-requested-with': 'XMLHttpRequest',
+      'x-instagram-ajax': '1',
+      'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+      'accept': 'application/json, text/javascript, */*; q=0.01',
+      'referer': 'https://www.instagram.com/explore/tags/poker/',
+      'authority': 'www.instagram.com'
+    }
+    agent
+    .get(url)
+    .set(newHeaders)
+    .end((err, res) => {
+      if(!!err) {
+        reject(err)
+      }
+      else {
+        resolve(res.body.users)
+      }
+    })
+  })
+}
 
 
 export const findUserFromPic = (picId, hashtag, headers) => {
@@ -100,8 +128,9 @@ export const getUserProfile = (username) => {
 };
 
 export const getInfluencerProfile = (influencer) => {
+  console.log('getting influencer proifle', influencer)
   return new Promise((resolve, reject) => {
-    getUserProfile(influencer)
+    getUserProfile(influencer.query)
     .then(res => parseProfile(res))
     .then(profile => resolve(profile))
     .catch(err => reject(err))

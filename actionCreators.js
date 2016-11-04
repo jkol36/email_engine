@@ -19,11 +19,11 @@ import {
 
 export const getInitialStateForInfluencer = (influencer) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
-    if(getState().influencers[influencer] != undefined) {
-      resolve(getState().influencers[influencer])
+    if(getState().influencers[influencer.id] != undefined) {
+      resolve(getState().influencers[influencer.id])
     }
     else {
-      influencerRef.child(influencer).once('value', s => {
+      influencerRef.child(influencer.id).once('value', s => {
         if(s.exists()) {
           dispatch(saveInfluencer(influencer, s.val()))
           .then(() => resolve(s.val()))
@@ -37,12 +37,13 @@ export const getInitialStateForInfluencer = (influencer) => (dispatch, getState)
   });
 };
 export const getInitialStateForHashtag = (hashtag) => (dispatch, getState) => {
+  console.log('getting initial state for hashtag', hashtag)
   return new Promise((resolve, reject) => {
-    if(getState().hashtags[hashtag] != undefined) {
-      resolve(getState().hashtags[hashtag])
+    if(getState().hashtags[hashtag.id] != undefined) {
+      resolve(getState().hashtags[hashtag.id])
     }
     else {
-      hashtagRef.child(hashtag).once('value', s => {
+      hashtagRef.child(hashtag.id).once('value', s => {
         if(s.exists()) {
           //check to see if hasNextPage is false. If it's false, check the time the hashtag was last run
           //if the difference btween the time now and the time the hashtag was last run is more than 12 hours, 
@@ -61,27 +62,27 @@ export const getInitialStateForHashtag = (hashtag) => (dispatch, getState) => {
 
 export const anotherFollowerParsed = (influencer) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
-    influencerRef.child(influencer).child('followersParsed').transaction(currentValue => currentValue + 1, () => {
+    influencerRef.child(influencer.id).child('followersParsed').transaction(currentValue => currentValue + 1, () => {
       dispatch({type: ANOTHER_FOLLOWER_PARSED, influencer})
     })
   })
 }
 export const anotherProfileParsed = (hashtag) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
-    hashtagRef.child(hashtag).child('profilesParsed').transaction(currentValue => currentValue + 1, () => {
+    hashtagRef.child(hashtag.id).child('profilesParsed').transaction(currentValue => currentValue + 1, () => {
       dispatch({type: ANOTHER_PROFILE_PARSED, hashtag})
     })
   })
 }
 export const getNextStateForHashtag = (hashtag) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
-    let {pageInfo:{nextPage, lastPage, hasNextPage}, posts} = getState().hashtags[hashtag]
+    let {pageInfo:{nextPage, lastPage, hasNextPage}, posts} = getState().hashtags[hashtag.id]
     if(!hasNextPage) {
       dispatch(saveHashtag(hashtag, {hasNextPage})).then(resolve('done'))
     }
     else {
       dispatch(dumpPostsForHashtag(hashtag))
-      .then(() => getPostsForHashtag(hashtag, nextPage, 10))
+      .then(() => getPostsForHashtag(hashtag.query, nextPage, 10))
       .then(data => {
         let {pageInfo, posts} = data
         return dispatch(saveHashtag(hashtag, {posts, pageInfo}))
@@ -94,7 +95,7 @@ export const getNextStateForHashtag = (hashtag) => (dispatch, getState) => {
 }
 export const influencerStarted = (influencer) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
-    influencerRef.child(influencer).child('status').set('running', () => {
+    influencerRef.child(influencer.id).child('status').set('running', () => {
       dispatch({type: INFLUENCER_STARTED, influencer})
       resolve()
     })
@@ -102,8 +103,8 @@ export const influencerStarted = (influencer) => (dispatch, getState) => {
 }
 export const influencerHaltedWithError = (influencer, error) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
-    influencerRef.child(influencer).child('status').set(error, () => {
-      influencerRef.child(influencer).child('error').update({error}, () => {
+    influencerRef.child(influencer.id).child('status').set(error, () => {
+      influencerRef.child(influencer.id).child('error').update({error}, () => {
         resolve()
       })
     })
@@ -111,7 +112,7 @@ export const influencerHaltedWithError = (influencer, error) => (dispatch, getSt
 }
 export const hashtagStarted = (hashtag) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
-    hashtagRef.child(hashtag).child('status').set('running', () => {
+    hashtagRef.child(hashtag.id).child('status').set('running', () => {
       dispatch({type: HASHTAG_STARTED, hashtag})
       resolve()
     })
@@ -119,7 +120,7 @@ export const hashtagStarted = (hashtag) => (dispatch, getState) => {
 }
 export const hashtagStopped = (hashtag) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
-    hashtagRef.child(hashtag).child('status').set('stopped', () => {
+    hashtagRef.child(hashtag.id).child('status').set('stopped', () => {
       dispatch({type: HASHTAG_STOPPED, hashtag})
       resolve()
     })
@@ -127,8 +128,8 @@ export const hashtagStopped = (hashtag) => (dispatch, getState) => {
 }
 export const hashtagHaltedWithError = (hashtag, error) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
-    hashtagRef.child(hashtag).child('status').set(error, () => {
-      hashtagRef.child(hashtag).child('error').update({error}, () => {
+    hashtagRef.child(hashtag.id).child('status').set(error, () => {
+      hashtagRef.child(hashtag.id).child('error').update({error}, () => {
         resolve()
       })
     })
@@ -136,7 +137,7 @@ export const hashtagHaltedWithError = (hashtag, error) => (dispatch, getState) =
 }
 export const influencerStopped = (influencer) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
-    influencerRef.child(influencer).child('status').set('stopped', () => {
+    influencerRef.child(influencer.id).child('status').set('stopped', () => {
       dispatch({type: INFLUENCER_STOPPED, influencer})
       resolve()
     })
@@ -152,7 +153,7 @@ export const dumpPostsForHashtag = (hashtag) => (dispatch, getState) => {
 
 export const saveInfluencer = (influencer, data) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
-    influencerRef.child(influencer).update(data, () => {
+    influencerRef.child(influencer.id).update(data, () => {
       dispatch({type: SAVE_INFLUENCER, influencer, data})
       resolve()
     })
@@ -161,7 +162,7 @@ export const saveInfluencer = (influencer, data) => (dispatch, getState) => {
 
 export const saveHashtag = (hashtag, data) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
-    hashtagRef.child(hashtag).update(data, () => {
+    hashtagRef.child(hashtag.id).update(data, () => {
       dispatch({type: SAVE_HASHTAG, hashtag, data})
       resolve()
     })
@@ -169,9 +170,9 @@ export const saveHashtag = (hashtag, data) => (dispatch, getState) => {
 }
 export const emailFoundForHashtag = (hashtag, email) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
-      hashtagRef.child(hashtag).child('emails_found').transaction(currentValue => currentValue+1, () => {
-        hashtagRef.child(hashtag).child('emails').push(email, () => {
-        dispatch({type: EMAILS_FOUND_FOR_HASHTAG, email});
+      hashtagRef.child(hashtag.id).child('emails_found').transaction(currentValue => currentValue+1, () => {
+        hashtagRef.child(hashtag.id).child('emails').push(email, () => {
+        dispatch({type: EMAILS_FOUND_FOR_HASHTAG, hashtag, email});
         resolve();
       });
     })
@@ -180,8 +181,8 @@ export const emailFoundForHashtag = (hashtag, email) => (dispatch, getState) => 
 };
 export const emailFoundForInfluencer = (influencer, email) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
-      influencerRef.child(influencer).child('emails_found').transaction(currentValue => currentValue + 1, () => {
-        influencerRef.child(influencer).child('emails').push(email, () => {
+      influencerRef.child(influencer.id).child('emails_found').transaction(currentValue => currentValue + 1, () => {
+        influencerRef.child(influencer.id).child('emails').push(email, () => {
         dispatch({type: EMAILS_FOUND_FOR_INFLUENCER, influencer, email});
         resolve();
       });
@@ -201,7 +202,7 @@ export const dumpFollowersForInfluencer = (influencer) => (dispatch, getState) =
 
 export const getNextStateForInfluencer = (influencer) => (dispatch, getState) => {
   return new Promise((resolve, reject) => {
-    let {pageInfo:{nextPage, lastPage, hasNextPage}, followers, userId} = getState().influencers[influencer]
+    let {pageInfo:{nextPage, lastPage, hasNextPage}, followers, userId} = getState().influencers[influencer.id]
     if(!hasNextPage) {
       dispatch(saveInfluencer(influencer, {hasNextPage})).then(resolve('done'))
     }

@@ -14,10 +14,10 @@ export const ANOTHER_PROFILE_PARSED = 'ANOTHER_PROFILE_PARSED';
 export const emails = (state = {}, action) => {
   switch (action.type) {
       case EMAILS_FOUND_FOR_INFLUENCER:
-        state[action.influencer] = {...state[action.influencer], ...action.email}
+        state[action.influencer.id] = {...state[action.influencer.id], ...action.email}
         return state
       case EMAILS_FOUND_FOR_HASHTAG:
-        return state[action.hashtag] = {...state[action.hashtag], ...action.email}
+        return state[action.hashtag.id] = {...state[action.hashtag.id], ...action.email}
     default:
       return state;
   }
@@ -27,20 +27,20 @@ export const emails = (state = {}, action) => {
 export const influencers = (state={}, action) => {
   switch(action.type) {
     case SAVE_INFLUENCER:
-      state[action.influencer] = {...state[action.influencer], ...action.data}
+      state[action.influencer.id] = {...state[action.influencer.id], ...action.data}
       return state
     case DUMP_FOLLOWERS_FOR_INFLUENCER:
-      state[action.influencer] = Object.assign({}, state[action.influencer], delete state[action.influencer].followers)
+      state[action.influencer.id] = Object.assign({}, state[action.influencer.id], delete state[action.influencer.id].followers)
       return state
     case INFLUENCER_STARTED:
-      state[action.influencer] = {...state[action.influencer], ...{status:'running'} }
+      state[action.influencer.id] = {...state[action.influencer.id], ...{status:'running'} }
       return state
     case INFLUENCER_STOPPED:
-      state[action.influencer] = {...state[action.influencer], ...{status:'stopped'} }
+      state[action.influencer.id] = {...state[action.influencer.id], ...{status:'stopped'} }
       return state
     case ANOTHER_FOLLOWER_PARSED:
-      const previousCount = state[action.influencer].followersParsed
-      state[action.influencer] = {...state[action.influencer], ...{followersParsed:previousCount+1}}
+      const previousCount = state[action.influencer.id].followersParsed
+      state[action.influencer.id] = {...state[action.influencer.id], ...{followersParsed:previousCount+1}}
       return state
     default:
       return state
@@ -50,20 +50,20 @@ export const influencers = (state={}, action) => {
 export const hashtags = (state={}, action) => {
   switch(action.type) {
     case SAVE_HASHTAG:
-      state[action.hashtag] = {...state[action.hashtag], ...action.data}
+      state[action.hashtag.id] = {...state[action.hashtag.id], ...action.data}
       return state
     case DUMP_POSTS_FOR_HASHTAG:
-      state[action.hashtag] = Object.assign({}, state[action.hashtag], delete state[action.hashtag].posts)
+      state[action.hashtag.id] = Object.assign({}, state[action.hashtag.id], delete state[action.hashtag.id].posts)
       return state
     case HASHTAG_STARTED:
-      state[action.hashtag] = {...state[action.hashtag], ...{status:'running'} }
+      state[action.hashtag.id] = {...state[action.hashtag.id], ...{status:'running'} }
       return state
     case HASHTAG_STOPPED:
-      state[action.hashtag] = {...state[action.hashtag], ...{status:'stopped'} }
+      state[action.hashtag.id] = {...state[action.hashtag.id], ...{status:'stopped'} }
       return state
     case ANOTHER_PROFILE_PARSED:
-      const previousCount = state[action.hashtag].profilesParsed
-      state[action.hashtag] = {...state[action.hashtag], ...{profilesParsed:previousCount+1}}
+      const previousCount = state[action.hashtag.id].profilesParsed
+      state[action.hashtag] = {...state[action.hashtag.id], ...{profilesParsed:previousCount+1}}
     default:
       return state
   }
