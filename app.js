@@ -213,7 +213,7 @@ const start = () => {
     })
   })
   firebase.database().ref('igbot/querySuggestions').on('child_added', snap => {
-    getSuggesstions(snap.val().input)
+    getSuggesstions(snap.val().query)
     .then(suggestions => {
       console.log(suggestions)
       firebase.database().ref(`igbot/querySuggestionResults/${snap.val().postRef}`).set(suggestions) 
