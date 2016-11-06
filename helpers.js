@@ -51,7 +51,7 @@ export const getFirstPageForHashtag = (hashtag) => {
   })
 }
 
-export const getSuggesstions = (term) => {
+export const getSuggesstions = (term, queryType) => {
   return new Promise((resolve, reject) => {
     let url = `https://www.instagram.com/web/search/topsearch/?context=blended&query=${term}&rank_token=0.18773450985527074`
     let newHeaders = {
@@ -74,7 +74,13 @@ export const getSuggesstions = (term) => {
         reject(err)
       }
       else {
-        resolve(res.body.users)
+        switch(queryType) {
+          case 'influencer':
+            resolve(res.body.users)
+          case 'hashtag':
+            console.log('got hashtag')
+            resolve(res.body.hashtags)
+        }
       }
     })
   })
