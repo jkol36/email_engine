@@ -16,6 +16,7 @@ export const parseProfile = data => {
       if (emails) {
         resolve({email: emails[0], 
           username, 
+          metaData:json.entry_data.ProfilePage[0],
           createdAt:Date.now(),
           id: json.entry_data.ProfilePage[0].user.id,
           followedBy: json.entry_data.ProfilePage[0].user.followed_by,
@@ -25,6 +26,7 @@ export const parseProfile = data => {
       else {
         resolve({
           email:404,
+          metaData:json.entry_data.ProfilePage[0],
           createdAt: Date.now(),
           id: json.entry_data.ProfilePage[0].user.id,
           followedBy: json.entry_data.ProfilePage[0].user.followed_by,
@@ -35,6 +37,7 @@ export const parseProfile = data => {
     else {
       resolve({
         email: 404,
+        metaData:json.entry_data.ProfilePage[0],
         createdAt: Date.now(),
         id: json.entry_data.ProfilePage[0].user.id,
         followedBy: json.entry_data.ProfilePage[0].user.followed_by,
