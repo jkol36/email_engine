@@ -4,7 +4,11 @@ import {
   influencerRef, 
   pictureCount, 
   followerCount, 
-  workRef
+  queryRef,
+  suggestionRef,
+  suggestionResultRef,
+  botRef,
+  currentVersion
 } from './config';
 import {
 	getPostsForHashtag,
@@ -42,8 +46,6 @@ const runNormalForInfluencer = (influencer) => {
   console.log('running normail for influencer')
   return new Promise((resolve, reject) => {
     const {followers, pageInfo, followersCount, followersParsed } = getState().influencers[influencer.id]
-    const percentageDone = followersParsed / followersCount.count
-    console.log(percentageDone)
     dispatch(influencerStarted(influencer))
     .then(dispatch(saveInfluencer(influencer, {lastRun:Date.now()})))
     .then(() => {
@@ -91,6 +93,7 @@ const runInitialForInfluencer = (influencer) => {
         return dispatch(saveInfluencer(influencer, data))
       })
       .then(() => resolve(influencer))
+      .catch(err => console.log(err.stack))
   })
 }
 const startInfluencer = (influencer) => {
@@ -99,15 +102,18 @@ const startInfluencer = (influencer) => {
     .then(state => {
       if(!!state.lastRun) {
           runInitialForInfluencer(influencer).then(runNormalForInfluencer(influencer))
+          .catch(err => console.log(err.stack))
         }
       else if(state === 'run_initial') {
         runInitialForInfluencer(influencer)
         .then(() => runNormalForInfluencer(influencer))
         .then(resolve(influencer))
+        .catch(err => console.log(err.stack))
       }
       else {
         runNormalForInfluencer(influencer)
         .then(resolve(influencer))
+        .catch(err => console.log(err.stack))
       }
     })
     .catch(err => reject(err))
@@ -187,43 +193,62 @@ const startHashtag = (hashtag) => {
         runInitialForHashtag(hashtag)
         .then(() => runNormalForHashtag(hashtag))
         .then(() => console.log('finished hashtag', hashtag))
+        .catch(err => console.log(err.stack))
       }
       else {
         runNormalForHashtag(hashtag)
         .then(resolve)
       }
     })
+    .catch(err => console.log('error caught'))
   })
 }
 
 
-
-const start = () => {
-  firebase.database().ref('igbot/queries').on('child_added', snap => {
-    Object.keys(snap.val()).map(k => {
-      if(snap.val()[k].status === 'needs love') {
-        firebase.database().ref(`igbot/queries/${snap.key}/${k}/status`).set('done')
-        switch(snap.val()[k].type) {
+const markAsRunning = () => {
+  return new Promise((resolve, reject) => {
+    botRef.child('currentVersion').set(currentVersion)
+    botRef.update({
+      lastRestart: Date.now(),
+      reason: 'Start function called'
+    }, () => resolve())
+  })
+}
+const listenForWork = () => {
+  console.log('listening for work')
+  suggestionRef.on('child_added', snap => {
+    console.log(snap.val().status)
+    switch(snap.val().status) {
+      case 0:
+        getSuggesstions(snap.val().query, snap.val().queryType)
+        .then(suggestions => {
+          suggestionResultRef.child(`${snap.val().postRef}`).set(suggestions) 
+        })
+    }
+  })
+  setInterval(() => suggestionRef.set(null, () => {
+   suggestionResultRef.set(null)
+   }), 10000)
+  queryRef.on('child_added', s => {
+    Object.keys(s.val()).map(k => {
+      if(s.val()[k].status === 0) {
+        queryRef.child(s.key).child(k).child('status').set('done')
+        switch(s.val()[k].type) {
           case 'influencer':
-            startInfluencer(snap.val()[k])
+            return startInfluencer(s.val()[k]).catch(err => console.log(err))
           case 'hashtag':
-            startHashtag(snap.val()[k])
+            return startHashtag(s.val()[k])
         }
       }
     })
   })
-  firebase.database().ref('igbot/querySuggestions').on('child_added', snap => {
-    getSuggesstions(snap.val().query, snap.val().queryType)
-    .then(suggestions => {
-      console.log(suggestions)
-      firebase.database().ref(`igbot/querySuggestionResults/${snap.val().postRef}`).set(suggestions) 
-    })
-  })
-  setInterval(() => firebase.database().ref('igbot/querySuggestions').set(null, () => {
-    firebase.database().ref('igbot/querySuggestionResults').set(null)
-  }), 10000)
 }
-
+const start = () => {
+  process.on('error', (e) => console.log(e))
+  process.on('uncaughtException', (e) => console.log('gotchya',e))
+  markAsRunning()
+  .then(listenForWork())
+}
 start()
 
 

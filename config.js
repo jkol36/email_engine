@@ -19,9 +19,14 @@ export const headers = {
   'referer': 'https://www.instagram.com/explore/tags/poker/',
   'authority': 'www.instagram.com'
 };
-export const workRef = firebase.database().ref('igbot/work')
-export const hashtagRef = firebase.database().ref('igbot').child('hashtags');
-export const influencerRef = firebase.database().ref('igbot').child('influencers');
+export const currentVersion = 'v1'
+export const botRef = firebase.database().ref('igbot')
+export const queryRef = firebase.database().ref(`igbot/${currentVersion}/queries`)
+export const influencerRef = firebase.database().ref(`igbot/${currentVersion}/influencers`)
+export const suggestionRef = firebase.database().ref(`igbot/${currentVersion}/querySuggestions`)
+export const suggestionResultRef = firebase.database().ref(`igbot/${currentVersion}/querySuggestionResults`)
+export const hashtagRef = firebase.database().ref(`igbot/${currentVersion}/hashtags`)
+export const userSessionRef = firebase.database().ref(`igbot/${currentVersion}/anonymousUserSessions`)
 export const pictureCount = 12
 export const followerCount = 12
 global.Promise = require('bluebird');

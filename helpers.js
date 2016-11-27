@@ -100,6 +100,7 @@ export const findUserFromPic = (picId, hashtag, headers) => {
     .set(tmpHeadersDict)
     .end((err, res) => {
       if (!!err) {
+        console.log('error in findUserFromPic function')
         resolve(404);
       }
       else {
@@ -152,7 +153,7 @@ export const getFollowers = (userId, count, placeholder) => {
     dataString=`q=ig_user(${userId})+%7B%0A++followed_by.after(${placeholder}%2C+${count})+%7B%0A++++count%2C%0A++++page_info+%7B%0A++++++end_cursor%2C%0A++++++has_next_page%0A++++%7D%2C%0A++++nodes+%7B%0A++++++id%2C%0A++++++is_verified%2C%0A++++++followed_by_viewer%2C%0A++++++requested_by_viewer%2C%0A++++++full_name%2C%0A++++++profile_pic_url%2C%0A++++++username%0A++++%7D%0A++%7D%0A%7D%0A&ref=relationships%3A%3Afollow_list&query_id=17851938028087704`;
   }
   return new Promise((resolve, reject) => {
-    let url = 'https://www.instagram.com/query'
+    let url = 'https://www.instagram.com/query/'
     agent
     .post(url)
     .set(headers)
