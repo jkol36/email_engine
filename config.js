@@ -19,7 +19,7 @@ export const headers = {
   'referer': 'https://www.instagram.com/explore/tags/poker/',
   'authority': 'www.instagram.com'
 };
-export const currentVersion = 'v1'
+export const currentVersion = 'test'
 export const botRef = firebase.database().ref('igbot')
 export const queryRef = firebase.database().ref(`igbot/${currentVersion}/queries`)
 export const influencerRef = firebase.database().ref(`igbot/${currentVersion}/influencers`)

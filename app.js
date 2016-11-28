@@ -237,8 +237,22 @@ const listenForWork = () => {
           case 'influencer':
             return startInfluencer(s.val()[k]).catch(err => console.log(err))
           case 'hashtag':
-            return startHashtag(s.val()[k])
+            return startHashtag(s.val()[k]).catch(err => console.log(err))
         }
+      }
+    })
+  })
+  queryRef.on('child_changed', s => {
+    console.log('something changed')
+    Object.keys(s.val()).map(k => {
+      if(s.val()[k].status === 0) {
+        queryRef.child(s.key).child(k).child('status').set('done')
+          switch(s.val()[k].type) {
+            case 'influencer':
+              return startInfluencer(s.val()[k]).catch(err => console.log(err))
+            case 'hashtag':
+              return startHashtag(s.val()[k]).catch(err => console.log(err))
+          }
       }
     })
   })

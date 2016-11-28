@@ -78,7 +78,6 @@ export const getSuggesstions = (term, queryType) => {
           case 'influencer':
             resolve(res.body.users)
           case 'hashtag':
-            console.log('got hashtag')
             resolve(res.body.hashtags)
         }
       }
