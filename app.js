@@ -1,4 +1,5 @@
 import firebase from 'firebase'
+import taim from 'taim'
 import {
   hashtagRef, 
   influencerRef, 
@@ -43,14 +44,13 @@ import {store} from './store';
 let {dispatch, getState} = store;
 
 const runNormalForInfluencer = (influencer) => {
-  console.log('running normail for influencer')
   return new Promise((resolve, reject) => {
     const {followers, pageInfo, followersCount, followersParsed } = getState().influencers[influencer.id]
     dispatch(influencerStarted(influencer))
     .then(dispatch(saveInfluencer(influencer, {lastRun:Date.now()})))
     .then(() => {
       return Promise.map(followers, (follower) => {
-        return getUserProfile(follower.username)
+        return getUserProfile(follower.username).catch(err => runNormalForInfluencer(influencer))
       })
     })
     .map(parseProfile)
@@ -68,27 +68,26 @@ const runNormalForInfluencer = (influencer) => {
     .then(() => dispatch(getNextStateForInfluencer(influencer)))
     .then(() => {
       if(!pageInfo.hasNextPage) {
-
-        
+        resolve()
       }
       else{
         runNormalForInfluencer(influencer)
       }
     })
-    .catch(err => reject(err))
+    .catch(err => console.log())
   })
 }
 
 const runInitialForInfluencer = (influencer) => {
   console.log('running inital for influencer', influencer)
   return new Promise((resolve, reject) => {
-     getInfluencerProfile(influencer)
+     getInfluencerProfile(influencer).catch(err => runInitialForInfluencer(influencer))
       .then(profile => dispatch(saveInfluencer(influencer, 
         {
           userId:profile.id,
           followersCount: profile.followedBy,
         })))
-      .then(() => getFollowers(getState().influencers[influencer.id].userId, followerCount))
+      .then(() => getFollowers(getState().influencers[influencer.id].userId, followerCount)).catch(err => runInitialForInfluencer(influencer))
       .then(data => {
         return dispatch(saveInfluencer(influencer, data))
       })
@@ -97,6 +96,7 @@ const runInitialForInfluencer = (influencer) => {
   })
 }
 const startInfluencer = (influencer) => {
+  console.time(`${influencer}`)
   return new Promise((resolve, reject) => {
      dispatch(getInitialStateForInfluencer(influencer))
     .then(state => {
@@ -260,10 +260,12 @@ const listenForWork = () => {
 const start = () => {
   process.on('error', (e) => console.log(e))
   process.on('uncaughtException', (e) => console.log('gotchya',e))
+  process.on('unhandledRejectionError', e => start())
   markAsRunning()
   .then(listenForWork())
 }
 start()
+
 
 
 
