@@ -1,3 +1,4 @@
+require('@risingstack/trace');
 import firebase from 'firebase';
 const serviceAccount = require('./igbot-serviceaccount.json');
 
