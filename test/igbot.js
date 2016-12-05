@@ -3,8 +3,10 @@ import {store} from '../store';
 import {firebaseRef} from '../config'
 import {
   getFirstPageForHashtag,
+  getUserProfile,
+  pickProxy
 } from '../helpers';
-import {,
+import {
   savePageInfo
 } from '../actionCreators';
 
@@ -19,6 +21,21 @@ describe('IGBOT SETUP', () => {
   });
 })
 
+describe('pick a proxy', () => {
+  it('should pick a proxy server', done => {
+    let proxy = pickProxy()
+    console.log(proxy)
+    expect(proxy).to.not.be.null
+    done()
+  })
+})
+
+describe('test proxy', () => {
+  it('should get a users profile using a proxy', done => {
+    getUserProfile('jkol36')
+    .then(console.log)
+  })
+})
 describe('helpers', () => {
   let lastPageId 
   it('should getInitialPage for hashtag vegan from instagram', done => {

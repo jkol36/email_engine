@@ -96,7 +96,7 @@ const runInitialForInfluencer = (influencer) => {
   })
 }
 const startInfluencer = (influencer) => {
-  console.time(`${influencer}`)
+  process.on('unhandledRejectionError', e => startInfluencer(influencer))
   return new Promise((resolve, reject) => {
      dispatch(getInitialStateForInfluencer(influencer))
     .then(state => {
@@ -186,6 +186,7 @@ const runInitialForHashtag = (hashtag) => {
 }
 const startHashtag = (hashtag) => {
   console.log('starting', hashtag)
+  process.on('unhandledRejectionError', e => startHashtag(hashtag))
   return new Promise((resolve, reject) => {
     dispatch(getInitialStateForHashtag(hashtag))
     .then(state => {

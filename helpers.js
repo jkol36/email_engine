@@ -1,8 +1,12 @@
 import {influencerRef, hashtagRef, headers} from './config';
 import {parseProfile} from './parser'
+import proxies from './proxies'
 const agent = require('superagent');
+const proxy = require('superagent-proxy')(agent)
 
-
+export const pickProxy = () => {
+  return proxies[Math.floor(Math.random() * proxies.length)]
+}
 export const getPostsForHashtag = (hashtag, placeholder, count) => {
   var dataString = `q=ig_hashtag(${hashtag})+%7B+media.after(${placeholder}%2C+${count})+%7B%0A++count%2C%0A++nodes+%7B%0A++++caption%2C%0A++++code%2C%0A++++comments+%7B%0A++++++count%0A++++%7D%2C%0A++++comments_disabled%2C%0A++++date%2C%0A++++dimensions+%7B%0A++++++height%2C%0A++++++width%0A++++%7D%2C%0A++++display_src%2C%0A++++id%2C%0A++++is_video%2C%0A++++likes+%7B%0A++++++count%0A++++%7D%2C%0A++++owner+%7B%0A++++++id%0A++++%7D%2C%0A++++thumbnail_src%2C%0A++++video_views%0A++%7D%2C%0A++page_info%0A%7D%0A+%7D&ref=tags%3A%3Ashow&query_id=`;
   return new Promise((resolve, reject) => {
@@ -10,6 +14,7 @@ export const getPostsForHashtag = (hashtag, placeholder, count) => {
     agent
       .post(url)
       .set(headers)
+      .proxy(pickProxy())
       .send(dataString)
       .end((err, res) => {
         if (!!err) {
@@ -35,6 +40,7 @@ export const getFirstPageForHashtag = (hashtag) => {
     agent
     .get(url)
     .set(headers)
+    .proxy(pickProxy())
     .end((err, res)=> {
       if(!!err) {
         reject(err)
@@ -97,6 +103,7 @@ export const findUserFromPic = (picId, hashtag, headers) => {
     agent
     .get(url)
     .set(tmpHeadersDict)
+    .proxy(pickProxy())
     .end((err, res) => {
       if (!!err) {
         console.log('error in findUserFromPic function')
@@ -119,6 +126,7 @@ export const getUserProfile = (username) => {
     agent
     .get(url)
     .set(headers)
+    .proxy(pickProxy())
     .end((err, res) => {
       if(!!err) {
         reject(err)
@@ -156,6 +164,7 @@ export const getFollowers = (userId, count, placeholder) => {
     agent
     .post(url)
     .set(headers)
+    .proxy(pickProxy())
     .send(dataString)
     .end((err, res) => {
       if(!!err) {
