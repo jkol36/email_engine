@@ -1,0 +1,6 @@
+email_engine:
+  extends:
+    file: docker-compose.yml
+    service: email_engine
+  environment:
+    NODE_ENV: production
