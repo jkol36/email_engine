@@ -20,14 +20,18 @@ export const headers = {
   'referer': 'https://www.instagram.com/explore/tags/poker/',
   'authority': 'www.instagram.com'
 };
-export const currentVersion = 'test'
-export const botRef = firebase.database().ref('igbot')
+export const currentVersion = 'batch'
+export const lastBatchRef = firebase.database().ref(`igbot/${currentVersion}/lastBatchRef`)
+export const botRef = firebase.database().ref(`igbot/${currentVersion}`)
 export const queryRef = firebase.database().ref(`igbot/${currentVersion}/queries`)
+export const placeholderRef = firebase.database().ref(`igbot/${currentVersion}/placeholders`)
+export const profilesParsedRef = firebase.database().ref(`igbot/${currentVersion}/profilesParsed`)
+export const queryResultRef = firebase.database().ref(`igbot/${currentVersion}/queryResults`)
 export const influencerRef = firebase.database().ref(`igbot/${currentVersion}/influencers`)
 export const suggestionRef = firebase.database().ref(`igbot/${currentVersion}/querySuggestions`)
 export const suggestionResultRef = firebase.database().ref(`igbot/${currentVersion}/querySuggestionResults`)
-export const hashtagRef = firebase.database().ref(`igbot/${currentVersion}/hashtags`)
 export const userSessionRef = firebase.database().ref(`igbot/${currentVersion}/anonymousUserSessions`)
+export const emailRef = firebase.database().ref(`igbot/${currentVersion}/emails`)
 export const pictureCount = 12
 export const followerCount = 12
 global.Promise = require('bluebird');
