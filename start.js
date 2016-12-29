@@ -273,7 +273,9 @@ const startQueriesFromLastBatch = () => {
 }
 
 const start = () => {
-  setInterval(() => dispatch(emptyStore(), 100000))
+  setInterval(() => dispatch(emptyStore()), 10000)
+  //restart every 10 minutes
+  setInterval(() => start(), 600000)
   syncStoreWithDataFromFirebase()
   .then(() => dispatch(createBatch()))
   .then(startQueriesFromLastBatch)
