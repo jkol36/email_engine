@@ -20,14 +20,15 @@ export const headers = {
   'referer': 'https://www.instagram.com/explore/tags/poker/',
   'authority': 'www.instagram.com'
 };
-export const currentVersion = 'batch'
-export const lastBatchRef = firebase.database().ref(`igbot/${currentVersion}/lastBatchRef`)
+export const currentVersion = 'email_mine'
+export const currentBatchRef = firebase.database().ref(`igbot/${currentVersion}/currentBatchId`)
+export const lastBatchRef = firebase.database().ref(`igbot/${currentVersion}/lastBatchId`)
 export const botRef = firebase.database().ref(`igbot/${currentVersion}`)
 export const queryRef = firebase.database().ref(`igbot/${currentVersion}/queries`)
 export const placeholderRef = firebase.database().ref(`igbot/${currentVersion}/placeholders`)
 export const profilesParsedRef = firebase.database().ref(`igbot/${currentVersion}/profilesParsed`)
 export const queryResultRef = firebase.database().ref(`igbot/${currentVersion}/queryResults`)
-export const influencerRef = firebase.database().ref(`igbot/${currentVersion}/influencers`)
+export const influencerIdRef = firebase.database().ref(`igbot/${currentVersion}/influencerIds`)
 export const suggestionRef = firebase.database().ref(`igbot/${currentVersion}/querySuggestions`)
 export const suggestionResultRef = firebase.database().ref(`igbot/${currentVersion}/querySuggestionResults`)
 export const userSessionRef = firebase.database().ref(`igbot/${currentVersion}/anonymousUserSessions`)

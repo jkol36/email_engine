@@ -9,12 +9,14 @@ export const NEW_PROFILE_PARSED = 'NEW_PROFILE_PARSED'
 export const INITIAL_QUERIES_FETCHED = 'INITIAL_QUERIES_FETCHED'
 export const LAST_BATCH_ID_FETCHED = 'LAST_BATCH_ID_FETCHED'
 export const NEW_BATCH_CREATED = 'NEW_BATCH_CREATED'
+export const EMPTY_STORE = 'EMPTY_STORE'
 
 
 export const batch = (state=null, action) => {
   switch(action.type) {
     case NEW_BATCH_CREATED:
-      return action.newBatchId
+      state = action.newBatchId
+      return state
     default:
       return state
   }
@@ -62,6 +64,8 @@ export const emails = (state = [], action) => {
       case EMAIL_FOUND:
         let newState = [...state, action.email]
         return newState
+      case EMPTY_STORE:
+        return []
     default:
       return state;
   }
@@ -131,6 +135,8 @@ export const queryResults = (state={}, action) => {
     case QUERY_RESULT_UPDATED:
       state[action.queryId] = {...state[action.queryId], ...action.queryResult}
       return state
+    case EMPTY_STORE:
+      return {}
     default:
       return state
   }

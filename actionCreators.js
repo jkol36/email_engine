@@ -5,7 +5,7 @@ import {
   queryRef,
   botRef,
   queryResultRef,
-  influencerRef,
+  influencerIdRef,
   emailRef,
   placeholderRef,
   profilesParsedRef,
@@ -24,11 +24,49 @@ import {
   PLACEHOLDER_UPDATED,
   NEW_PROFILE_PARSED,
   NEW_BATCH_CREATED,
-  LAST_BATCH_ID_FETCHED
+  LAST_BATCH_ID_FETCHED,
+  EMPTY_STORE
 } from './reducers';
 
 
-export const createNewBatch = () => dispatch => {
+export const emptyStore = () => (dispatch, getState) => {
+  return new Promise(resolve => {
+    dispatch({
+      type: EMPTY_STORE
+    })
+    resolve()
+  })
+}
+export const initialPlaceholdersFetched = (placeholders) => dispatch => {
+  let queryIds = Object.keys(placeholders)
+  return Promise.mapSeries(queryIds, (queryId) => {
+    return new Promise(resolve => {
+       dispatch({
+        type: PLACEHOLDER_UPDATED,
+        placeholder: placeholders[queryId],
+        queryId
+      })
+      resolve()
+    })
+  })
+}
+export const initialInfluencerIdsFetched = (influencerIds) => dispatch => {
+  return new Promise(resolve => {
+    let influencerNames = Object.keys(influencerIds)
+    return Promise.mapSeries(influencerNames, (name) => {
+      let query = {
+        payload: name
+      }
+      dispatch({
+        type: INITIAL_INFLUENCER_ID,
+        id: influencerIds[name],
+        query
+      })
+      resolve()
+    })
+  })
+}
+export const createBatch = () => dispatch => {
   return new Promise(resolve => {
     let newBatchId = ID()
     lastBatchRef.set({id:newBatchId}, () => {
@@ -36,7 +74,7 @@ export const createNewBatch = () => dispatch => {
         type: NEW_BATCH_CREATED,
         newBatchId
       })
-      resolve()
+      resolve(newBatchId)
     })
   })
 }
@@ -49,6 +87,7 @@ export const initialQueriesFetched = queries => dispatch => {
   })
 }
 export const lastBatchIdFetched = (batchId) => dispatch => {
+  console.log('got last batch id', batchId)
   return new Promise(resolve => {
     dispatch({
       type: LAST_BATCH_ID_FETCHED,
@@ -57,7 +96,6 @@ export const lastBatchIdFetched = (batchId) => dispatch => {
   })
 }
 export const placeholderUpdated = (query, placeholder) => dispatch => {
-  console.log('placeholder updated called with', placeholder)
   return new Promise((resolve, reject) => {
     placeholderRef.child(query.id).set(placeholder, () => {
       dispatch({
@@ -72,7 +110,7 @@ export const placeholderUpdated = (query, placeholder) => dispatch => {
 }
 export const initialInfluencerId = (influencerId, query) => (dispatch) => {
   return new Promise((resolve, reject) => {
-    influencerRef.child(query.payload).set(influencerId, () => {
+    influencerIdRef.child(query.payload).set(influencerId, () => {
       dispatch({
         type: INITIAL_INFLUENCER_ID,
         id: influencerId,
@@ -138,7 +176,7 @@ export const createQueryResult = (query, queryResult={}) => (dispatch) => {
         queryResult,
         queryId: query.id
       })
-      resolve(query)
+      resolve(query.id)
     })
   })
 }
@@ -162,21 +200,15 @@ export const updateQueryResult = (queryId=123, queryResult={}) => (dispatch) => 
 //generalize queries
 //query can be of type influencer or type hashtag
 export const getInitialStateForQuery = (query={}) => (dispatch, getState) => {
-  console.log('get initial state for query called', query.id)
   return new Promise((resolve, reject) => {
-    if(getState().queryResults[query.id] != undefined) {
-      resolve(getState().queryResults[query.id])
+    if(getState().placeholders[query.id] != undefined) {
+      resolve('run_normal')
+    }
+    else if(getState().placeholders[query.id] === null) {
+      resolve('query finished')
     }
     else {
-      queryResultRef.child(query.id).once('value', snap => {
-        if(snap.exists()) {
-          //save the query in the redux state so we don't need to fetch from firebase again
-          dispatch(updateQueryResult(query.id, snap.val())).then(() => resolve(snap.val()))
-        }
-        else {
-          resolve('run_initial')
-        }
-      })
+      resolve('run_initial')
     }
   })
 }

@@ -2,7 +2,9 @@ import {
   queryRef, 
   lastBatchRef,
   suggestionResultRef,
-  suggestionRef
+  suggestionRef,
+  placeholderRef,
+  influencerIdRef
 } from './config'
 import {ID, listify} from './utils'
 import {
@@ -26,7 +28,10 @@ import {
   createQuery,
   lastBatchIdFetched,
   initialQueriesFetched,
-  createNewBatch
+  initialPlaceholdersFetched,
+  initialInfluencerIdsFetched,
+  createBatch,
+  emptyStore
 } from './actionCreators'
 import {
   QUERY_ADDED,
@@ -42,7 +47,6 @@ const saveInstagramProfile = (profile, query) => {
 
 
 const startPicChain = (pics, query) => {
-  console.log('starting pic chain', pics)
   return Promise.mapSeries(pics, (pic) => {
     return findUserFromPic(pic)
   })
@@ -67,9 +71,6 @@ const runInitialForHashtag = (hashtag) => {
           .return(hashtag)
 }
 const runNormalForHashtag = (hashtag) => {
-  console.log('runnign normal for hashtag')
-  console.log('page', getState().placeholders[hashtag.id])
-
   return getPicsForHashtag(hashtag, getState().placeholders[hashtag.id], 10)
           .then((pics) => startPicChain(pics, hashtag))
           .then(() => runNormalForHashtag(hashtag))
@@ -86,15 +87,16 @@ const getInfluencerId = (query) => {
 
 
 const startHashtagChain = (query) => {
-  console.log('starting hashtag chain', query)
   return dispatch(getInitialStateForQuery(query))
           .then(state => {
             switch(state) {
               case 'run_initial':
                 return runInitialForHashtag(query)
                         .then(() => runNormalForHashtag(query))
-              default:
+              case 'run_normal':
                 return runNormalForHashtag(query)
+              case 'query_finished':
+                return dispatch(updateQuery(query.id, {status:3}))
             }
           })
 }
@@ -106,29 +108,25 @@ const startInfluencerChain = (query) => {
             console.log(state)
             switch(state) {
               case 'run_initial':
-                if(getState().influencerIds[query.payload] === undefined) {
                   return getInfluencerId(query).then(() => runNormalForInfluencer(query))
-                }
-                else {
-                  return runNormalForInfluencer(query).catch(console.log)
-                }
-            }
+              case 'run_normal':
+                  return runNormalForInfluencer(query)
+              case 'query_finished':
+                return dispatch(updateQuery(query.id, {status:3}))
+              }
           })
 } 
 
 const runNormalForInfluencer = (influencer={}) => {
-  console.log('running normal for influencer', influencer)
   getFollowers(influencer, getState().influencerIds[influencer.payload], 10, getState().placeholders[influencer.id])
   .mapSeries(getUserProfile)
   .mapSeries(parseProfile)
   .mapSeries((profile) => dispatch(newProfileParsed(influencer)).return(profile))
   .mapSeries((profile) => {
-    console.log('profile ids', profile.id)
     return profile
   })
   .filter(profile => profile.email != undefined)
   .then(profiles => {
-    console.log('profiles with emails', profiles)
     return profiles
   })
   .each((profile) => {
@@ -144,35 +142,6 @@ const runNormalForInfluencer = (influencer={}) => {
     }
   })
 }
-
-const startAllUnstartedQueries = () => {
-  let unstarted = getState().queries.filter(obj => obj.status === 0)
-  dispatch()
-}
-const setup = () => {
-  console.log('setting up')
-  return Promise.all([
-    startAllUnstartedQueries(),
-    startAllUnfinishedQueries()
-  ])
-  //start all queries that have not been started and all queries that haven't finished
-  queryRef.orderByChild('status').equalTo(0).once('value', snap => {
-    if(snap.exists()) {
-      let queries = Object.keys(snap.val()).map(k => snap.val()[k])
-      return Promise.mapSeries(queries, (query) => {
-        return dispatch(createQuery(query))
-      })
-    }
-  })
- 
-
-}
-const startUnfinishedQueries = () => {
-  //starts all unfinished queries that are stored in the store
-  console.log('starting unfinished queries')
-  return new Promise(resolve => resolve('startedUnfinishedQueries'))
-}
-
 
 const listenForFirebaseUpdates = () => {
   console.log('listening for firebase updates')
@@ -191,7 +160,6 @@ const listenForStoreUpdates = () => {
   return new Promise(resolve => {
     resolve(store.subscribe(() => {
     let {lastAction} = getState()
-    console.log('last action', lastAction)
     switch(lastAction.type) {
       case QUERY_ADDED:
         dispatch(updateQuery(lastAction.query.id, {batchId: getState().batch}))
@@ -199,7 +167,6 @@ const listenForStoreUpdates = () => {
           return startInfluencerChain(lastAction.query)
         }
         else if(lastAction.query.type === 'Hashtag') {
-          console.log('hashtag added')
           return startHashtagChain(lastAction.query)
         }
         return
@@ -208,12 +175,50 @@ const listenForStoreUpdates = () => {
   })
 }
 const dispatchActions = () => {
-  dispatch(createQuery({
-    id: ID(),
-    status: 0,
-    payload: 'garyvee',
-    'type': 'Influencer'
-  }))
+  return Promise.all([
+    dispatch(createQuery({
+      id: ID(),
+      status: 0,
+      batchId: getState().batch,
+      payload: 'whatveganseat',
+      'type': 'Hashtag'
+    })),
+    dispatch(createQuery({
+      id: ID(),
+      status: 0,
+      batchId: getState().batch,
+      payload: 'bestofvegan',
+      'type': 'Influencer'
+    })),
+    dispatch(createQuery({
+      id: ID(),
+      status: 0,
+      batchId: getState().batch,
+      payload: 'vegansofig',
+      'type': 'Hashtag'
+    })),
+    dispatch(createQuery({
+      id: ID(),
+      status: 0,
+      batchId: getState().batch,
+      payload: 'rawfoodshare',
+      'type': 'Hashtag'
+    })),
+    dispatch(createQuery({
+      id: ID(),
+      status: 0,
+      batchId: getState().batch,
+      payload: 'veganfitness',
+      'type': 'Hashtag'
+    })),
+    dispatch(createQuery({
+      id: ID(),
+      status: 0,
+      batchId: getState().batch,
+      payload: 'plantpower',
+      'type': 'Hashtag'
+    }))
+  ])
 }
 const syncStoreWithDataFromFirebase = () => {
   return Promise.all([
@@ -226,45 +231,57 @@ const syncStoreWithDataFromFirebase = () => {
       if(snap.exists()) {
         return dispatch(initialQueriesFetched(snap.val()))
       }
+    }),
+    placeholderRef.once('value', snap => {
+      if(snap.exists()) {
+        return dispatch(initialPlaceholdersFetched(snap.val()))
+      }
+    }),
+    influencerIdRef.once('value', snap => {
+      console.log('influencerids', snap.val())
+      if(snap.exists()) {
+        return dispatch(initialInfluencerIdsFetched(snap.val()))
+      }
     })
+
   ])
 }
 const startQueriesFromLastBatch = () => {
-  console.log('starting queries from last batch')
   return new Promise(resolve => {
+    console.log('starting queries from last batch')
+    if(!getState().lastBatchId) {
+      resolve([])
+    }
     let queriesFromLastBatch = listify(getState().initialQueries)
                                 .filter(query => query.batchId === getState().lastBatchId.id)
                                 .filter(query => query.status != 3)
     Promise.all(Promise.map(queriesFromLastBatch, (query) => {
-      return dispatch(updateQuery(query.id, {status:1}))
+      return dispatch(updateQuery(query.id, {status:1, batchId: getState().batch}))
+      .then(() => {
         switch(query.type) {
          case 'Hashtag':
-           startHashtagChain(query)
-           break
+           return startHashtagChain(query)
          case 'Influencer':
-           startInfluencerChain(query)
-           break
-
+           return startInfluencerChain(query)
+        default:
+          return
         }
+      })
     })).then(resolve)
 
   })
 }
 
+const start = () => {
+  setInterval(() => dispatch(emptyStore(), 100000))
+  syncStoreWithDataFromFirebase()
+  .then(() => dispatch(createBatch()))
+  .then(startQueriesFromLastBatch)
+  .then(() => Promise.all([listenForStoreUpdates(), listenForFirebaseUpdates()]))
+  .catch(console.log)
+}
 
-syncStoreWithDataFromFirebase()
-.then(startQueriesFromLastBatch)
-.then(() => Promise.all([listenForStoreUpdates(), listenForFirebaseUpdates()]))
-.catch(console.log)
-// .then(startQueriesFromLastBatch)
-// .then(() => dispatch(createNewBatch()))
-// .then(listenForStoreUpdates)
-// .then(dispatchActions)
-// startQueriesFromLastBatch()
-// listenForStoreUpdates()
-// .then(dispatchActions())
-
-
+start()
 
 
 
