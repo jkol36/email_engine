@@ -25,10 +25,30 @@ import {
   NEW_PROFILE_PARSED,
   NEW_BATCH_CREATED,
   LAST_BATCH_ID_FETCHED,
-  EMPTY_STORE
+  EMPTY_STORE,
+  FOLLOWER_SETTING_FOUND,
+  PIC_SETTING_FOUND
 } from './reducers';
 
 
+export const followerSettingFound = (followerSetting) => dispatch => {
+  return new Promise(resolve => {
+    dispatch({
+      type: FOLLOWER_SETTING_FOUND,
+      value: followerSetting
+    })
+    resolve(followerSetting)
+  })
+}
+export const picsSettingFound = (picsSetting) => dispatch => {
+  return new Promise(resolve => {
+    dispatch({
+      type: PIC_SETTING_FOUND,
+      value: picsSetting
+    })
+    resolve(picsSetting)
+  })
+}  
 export const emptyStore = () => (dispatch, getState) => {
   return new Promise(resolve => {
     dispatch({
