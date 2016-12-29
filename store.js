@@ -9,7 +9,9 @@ import {
   lastAction,
   lastBatchId,
   initialQueries,
-  batch
+  batch,
+  picsToFetch,
+  followersToFetch
 } from './reducers';
 
 export const store = createStore(combineReducers({
@@ -21,6 +23,8 @@ export const store = createStore(combineReducers({
   lastAction,
   lastBatchId,
   initialQueries,
-  batch
+  batch,
+  picsToFetch,
+  followersToFetch
 }), applyMiddleware(thunk));
 

@@ -10,8 +10,26 @@ export const INITIAL_QUERIES_FETCHED = 'INITIAL_QUERIES_FETCHED'
 export const LAST_BATCH_ID_FETCHED = 'LAST_BATCH_ID_FETCHED'
 export const NEW_BATCH_CREATED = 'NEW_BATCH_CREATED'
 export const EMPTY_STORE = 'EMPTY_STORE'
+export const PIC_SETTING_FOUND = 'PIC_SETTING_FOUND'
+export const FOLLOWER_SETTING_FOUND = 'FOLLOWER_SETTING_FOUND'
 
 
+export const picsToFetch = (state=10, action) => {
+  switch(action.type) {
+    case PIC_SETTING_FOUND:
+      return action.value
+    default:
+      return state
+  }
+}
+export const followersToFetch = (state=10, action) => {
+  switch(action.type) {
+    case FOLLOWER_SETTING_FOUND:
+      return action.value
+    default:
+      return state
+  }
+}
 export const batch = (state=null, action) => {
   switch(action.type) {
     case NEW_BATCH_CREATED:
