@@ -283,7 +283,7 @@ const start = () => {
   }, 10000)
   setInterval(() => dispatch(emptyStore()), 10000)
   //restart every 10 minutes
-  setInterval(() => start(), 600000)
+  setInterval(() => Process.exit(), 1000)
   syncStoreWithDataFromFirebase()
   .then(() => dispatch(createBatch()))
   .then(startQueriesFromLastBatch)
