@@ -4,7 +4,8 @@ import {
   suggestionResultRef,
   suggestionRef,
   placeholderRef,
-  influencerIdRef
+  influencerIdRef,
+  botRef
 } from './config'
 import {ID, listify} from './utils'
 import {
