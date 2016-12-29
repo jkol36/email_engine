@@ -5,7 +5,9 @@ import {
   suggestionRef,
   placeholderRef,
   influencerIdRef,
-  botRef
+  botRef,
+  defaultFollowersToFetch,
+  defaultPicsToFetch
 } from './config'
 import {ID, listify} from './utils'
 import {
@@ -32,7 +34,9 @@ import {
   initialPlaceholdersFetched,
   initialInfluencerIdsFetched,
   createBatch,
-  emptyStore
+  emptyStore,
+  picsSettingFound,
+  followerSettingFound
 } from './actionCreators'
 import {
   QUERY_ADDED,
@@ -72,7 +76,7 @@ const runInitialForHashtag = (hashtag) => {
           .return(hashtag)
 }
 const runNormalForHashtag = (hashtag) => {
-  return getPicsForHashtag(hashtag, getState().placeholders[hashtag.id], 10)
+  return getPicsForHashtag(hashtag, getState().placeholders[hashtag.id], getState().picsToFetch)
           .then((pics) => startPicChain(pics, hashtag))
           .then(() => runNormalForHashtag(hashtag))
 }
@@ -119,7 +123,7 @@ const startInfluencerChain = (query) => {
 } 
 
 const runNormalForInfluencer = (influencer={}) => {
-  getFollowers(influencer, getState().influencerIds[influencer.payload], 10, getState().placeholders[influencer.id])
+  getFollowers(influencer, getState().influencerIds[influencer.payload], getState().followersToFetch, getState().placeholders[influencer.id])
   .mapSeries(getUserProfile)
   .mapSeries(parseProfile)
   .mapSeries((profile) => dispatch(newProfileParsed(influencer)).return(profile))
@@ -145,16 +149,28 @@ const runNormalForInfluencer = (influencer={}) => {
 }
 
 const listenForFirebaseUpdates = () => {
-  console.log('listening for firebase updates')
-  suggestionRef.on('child_added', snap => {
-    switch(snap.val().status) {
-      case 0:
-        getSuggesstions(snap.val().query, snap.val().queryType)
-        .then(suggestions => {
-          suggestionResultRef.child(`${snap.val().postRef}`).set(suggestions)
-        })
-    }
+  console.log('call')
+  return new Promise(resolve => {
+    console.log('listening for firebase updates')
+    return Promise.all([
+      botRef.child('followersToFetch').on('child_changed', snap => {
+        console.log('followers setting changed')
+        dispatch(followerSettingFound(snap.val())).then(() => console.log(getState().followersToFetch))
+    }),
+    botRef.on('child_changed', snap => {
+        switch(snap.key) {
+          case 'followersToFetch':
+          console.log('followers changed', snap.val())
+            dispatch(followerSettingFound(snap.val())).then(() => console.log(getState().followersToFetch))
+            return
+          case 'picsToFetch':
+             dispatch(picsSettingFound(snap.val())).then(()=> console.log(getState().picsToFetch))
+             return
+        }
+      })
+    ]).then(resolve)
   })
+
 }
 const listenForStoreUpdates = () => {
   console.log('listening for store updates')
@@ -222,6 +238,7 @@ const dispatchActions = () => {
   ])
 }
 const syncStoreWithDataFromFirebase = () => {
+  console.log('syncing store with data...')
   return Promise.all([
     lastBatchRef.once('value', snap => {
       if(snap.exists()) {
@@ -242,6 +259,22 @@ const syncStoreWithDataFromFirebase = () => {
       console.log('influencerids', snap.val())
       if(snap.exists()) {
         return dispatch(initialInfluencerIdsFetched(snap.val()))
+      }
+    }),
+    botRef.child('picsToFetch').once('value', snap => {
+      if(snap.exists()) {
+        return dispatch(picsSettingFound(snap.val()))
+      }
+      else {
+        return dispatch(picsSettingFound(defaultPicsToFetch))
+      }
+    }),
+    botRef.child('followersToFetch').once('value', snap => {
+      if(snap.exists()) {
+        return dispatch(followerSettingFound(snap.val()))
+      }
+      else {
+        return dispatch(followerSettingFound(defaultFollowersToFetch))
       }
     })
 
@@ -273,25 +306,35 @@ const startQueriesFromLastBatch = () => {
   })
 }
 
+const setup = () => {
+  return new Promise(resolve => {
+    listenForStoreUpdates()
+    listenForFirebaseUpdates()
+    let now = Date.now()
+    botRef.child('lastRestart').set({lastRetart: now})
+    setInterval(() => {
+      let upTime = Date.now() - now
+      let minutesUp = new Date(upTime).getMinutes()
+      botRef.child('UpTime').set({minutes:minutesUp})
+    }, 10000)
+    setInterval(() => dispatch(emptyStore()), 10000)
+    //restart every 10 minutes
+    setInterval(() => process.exit(), 600000)
+    setTimeout(() => resolve(), 2000)
+  })
+}
 const start = () => {
-  let now = Date.now()
-  botRef.child('lastRestart').set({lastRetart: now})
-  setInterval(() => {
-    let upTime = Date.now() - now
-    let minutesUp = new Date(upTime).getMinutes()
-    botRef.child('UpTime').set({minutes:minutesUp})
-  }, 10000)
-  setInterval(() => dispatch(emptyStore()), 10000)
-  //restart every 10 minutes
-  setInterval(() => process.exit(), 600000)
-  syncStoreWithDataFromFirebase()
+  setup()
+  .then(syncStoreWithDataFromFirebase)
   .then(() => dispatch(createBatch()))
   .then(startQueriesFromLastBatch)
-  .then(() => Promise.all([listenForStoreUpdates(), listenForFirebaseUpdates()]))
   .catch(console.log)
 }
 
 start()
+
+
+
 
 
 
