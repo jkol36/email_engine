@@ -273,6 +273,13 @@ const startQueriesFromLastBatch = () => {
 }
 
 const start = () => {
+  let now = Date.now()
+  botRef.child('lastRestart').set({lastRetart: now})
+  setInterval(() => {
+    let upTime = Date.now() - now
+    let minutesUp = new Date(upTime).getMinutes()
+    botRef.child('UpTime').set({minutes:minutesUp})
+  }, 10000)
   setInterval(() => dispatch(emptyStore()), 10000)
   //restart every 10 minutes
   setInterval(() => start(), 600000)
