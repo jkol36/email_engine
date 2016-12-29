@@ -310,34 +310,29 @@ const startQueriesFromLastBatch = () => {
   })
 }
 const updateResults = () => {
-  return new Promise(resolve => {
-    queryResultRef.once('value', snap => {
-      if(snap.exists()) {
-        let emailList = []
-        let rootObj = snap.val()
-        let queryIds = Object.keys(rootObj)
-        let initialResults = []
-        queryIds.map(queryId => {
-          let resultsForQueryId = rootObj[queryId]
-          let resultIds = Object.keys(resultsForQueryId)
-          resultIds.map(resultId => {
-            let resultObjForQueryId = Object.assign({}, resultsForQueryId[resultId], {queryId})
-            emailList.push(resultObjForQueryId.email)
-            initialResults.push(resultObjForQueryId)
-          })
+  return queryResultRef.once('value', snap => {
+    if(snap.exists()) {
+      let emailList = []
+      let rootObj = snap.val()
+      let queryIds = Object.keys(rootObj)
+      let initialResults = []
+      queryIds.map(queryId => {
+        let resultsForQueryId = rootObj[queryId]
+        let resultIds = Object.keys(resultsForQueryId)
+        resultIds.map(resultId => {
+          let resultObjForQueryId = Object.assign({}, resultsForQueryId[resultId], {queryId})
+          emailList.push(resultObjForQueryId.email)
+          initialResults.push(resultObjForQueryId)
         })
-        let finalEmailList = eliminateDuplicates(emailList)
-
-        uniqueEmailCount.set(finalEmailList.length, () => {
-          return Promise.all(Promise.map(finalEmailList, (email) => {
-            return new Promise(resolve => {
-              let found = initialResults.filter(obj => obj.email === email)[0]
-              uniqueEmailRef.push(found, resolve)
-            })
-          }))
-        }).then(resolve)
-      }
-    })
+      })
+      let finalEmailList = eliminateDuplicates(emailList)
+      uniqueEmailCount.set(finalEmailList.length)
+      uniqueEmailRef.set({})
+      finalEmailList.forEach(email => {
+        let found = initialResults.filter(result => result.email === email)[0]
+        uniqueEmailRef.push(found)
+      })
+    }
   })
 }
 const setup = () => {
@@ -350,9 +345,9 @@ const setup = () => {
       let upTime = Date.now() - now
       let minutesUp = new Date(upTime).getMinutes()
       botRef.child('UpTime').set({minutes:minutesUp})
-      updateResults()
       emptyStore()
-    }, 10000)
+      updateResults()
+    }, 100000)
     //restart every 10 minutes
     setInterval(() => process.exit(), 600000)
     setTimeout(() => resolve(), 2000)
