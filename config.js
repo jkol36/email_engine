@@ -21,6 +21,8 @@ export const headers = {
   'authority': 'www.instagram.com'
 };
 export const currentVersion = 'email_mine'
+export const uniqueEmailRef = firebase.database().ref(`igbot/${currentVersion}/uniqueEmails`)
+export const uniqueEmailCount = firebase.database().ref(`igbot/${currentVersion}/uniqueEmailCount`)
 export const currentBatchRef = firebase.database().ref(`igbot/${currentVersion}/currentBatchId`)
 export const lastBatchRef = firebase.database().ref(`igbot/${currentVersion}/lastBatchId`)
 export const botRef = firebase.database().ref(`igbot/${currentVersion}`)

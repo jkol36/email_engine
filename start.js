@@ -7,9 +7,12 @@ import {
   influencerIdRef,
   botRef,
   defaultFollowersToFetch,
-  defaultPicsToFetch
+  defaultPicsToFetch,
+  uniqueEmailRef,
+  uniqueEmailCount,
+  queryResultRef
 } from './config'
-import {ID, listify} from './utils'
+import {ID, listify, eliminateDuplicates} from './utils'
 import {
   getInitialPicsForHashtag,
   getPicsForHashtag,
@@ -123,6 +126,7 @@ const startInfluencerChain = (query) => {
 } 
 
 const runNormalForInfluencer = (influencer={}) => {
+  console.log(`fetching ${getState().followersToFetch} followers`)
   getFollowers(influencer, getState().influencerIds[influencer.payload], getState().followersToFetch, getState().placeholders[influencer.id])
   .mapSeries(getUserProfile)
   .mapSeries(parseProfile)
@@ -305,7 +309,37 @@ const startQueriesFromLastBatch = () => {
 
   })
 }
+const updateResults = () => {
+  return new Promise(resolve => {
+    queryResultRef.once('value', snap => {
+      if(snap.exists()) {
+        let emailList = []
+        let rootObj = snap.val()
+        let queryIds = Object.keys(rootObj)
+        let initialResults = []
+        queryIds.map(queryId => {
+          let resultsForQueryId = rootObj[queryId]
+          let resultIds = Object.keys(resultsForQueryId)
+          resultIds.map(resultId => {
+            let resultObjForQueryId = Object.assign({}, resultsForQueryId[resultId], {queryId})
+            emailList.push(resultObjForQueryId.email)
+            initialResults.push(resultObjForQueryId)
+          })
+        })
+        let finalEmailList = eliminateDuplicates(emailList)
 
+        uniqueEmailCount.set(finalEmailList.length, () => {
+          return Promise.all(Promise.map(finalEmailList, (email) => {
+            return new Promise(resolve => {
+              let found = initialResults.filter(obj => obj.email === email)[0]
+              uniqueEmailRef.push(found, resolve)
+            })
+          }))
+        }).then(resolve)
+      }
+    })
+  })
+}
 const setup = () => {
   return new Promise(resolve => {
     listenForStoreUpdates()
@@ -316,8 +350,9 @@ const setup = () => {
       let upTime = Date.now() - now
       let minutesUp = new Date(upTime).getMinutes()
       botRef.child('UpTime').set({minutes:minutesUp})
+      updateResults()
+      emptyStore()
     }, 10000)
-    setInterval(() => dispatch(emptyStore()), 10000)
     //restart every 10 minutes
     setInterval(() => process.exit(), 600000)
     setTimeout(() => resolve(), 2000)
