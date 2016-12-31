@@ -148,6 +148,7 @@ const runNormalForInfluencer = (influencer={}) => {
         return runNormalForInfluencer(influencer)
       default:
         console.log(err)
+        process.exit()
     }
   })
 }
@@ -323,7 +324,7 @@ const start = () => {
   .then(syncStoreWithDataFromFirebase)
   .then(() => dispatch(createBatch()))
   .then(startQueriesFromLastBatch)
-  .catch(console.log)
+  .catch(process.exit)
 }
 
 
