@@ -83,7 +83,8 @@ export const getUserProfile = (username) => {
       reject({
         message:'could not get user profile', 
         retryPayload: username,
-        originalError: err
+        originalError: err,
+        code:404
       })
     })
   })
@@ -99,7 +100,6 @@ export const getInfluencerProfile = (influencer={query:'jkol36'}) => {
 }
 
 export const getFollowers = (query, userId, count, placeholder) => {
-  console.log(userId)
   var dataString
   let url = 'https://www.instagram.com/query/'
   if(!placeholder) {
@@ -114,6 +114,7 @@ export const getFollowers = (query, userId, count, placeholder) => {
     .send(dataString)
     .then(res => {
       let followerArray = res.body.followed_by.nodes.map(follower => follower.username)
+      console.log('length of follower array', followerArray.length)
       return dispatch(placeholderUpdated(query,res.body.followed_by.page_info.end_cursor)).return(followerArray)
     })
 

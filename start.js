@@ -144,8 +144,8 @@ const runNormalForInfluencer = (influencer={}) => {
   .then(() => runNormalForInfluencer(influencer))
   .catch(err => {
     switch(err.code) {
-      case 1:
-        console.log('should restart this query')
+      case 404:
+        return runNormalForInfluencer(influencer)
       default:
         console.log(err)
     }
