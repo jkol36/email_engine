@@ -58,9 +58,9 @@ const startPicChain = (pics, query) => {
   return Promise.mapSeries(pics, (pic) => {
     return findUserFromPic(pic)
   })
-  .mapSeries(instagramUser => getUserProfile(instagramUser.username))
-  .mapSeries(parseProfile)
-  .mapSeries((profile) => {
+  .map(instagramUser => getUserProfile(instagramUser.username))
+  .map(parseProfile)
+  .map((profile) => {
     dispatch(newProfileParsed(query))
     return profile
   })
@@ -128,10 +128,10 @@ const startInfluencerChain = (query) => {
 const runNormalForInfluencer = (influencer={}) => {
   console.log(`fetching ${getState().followersToFetch} followers`)
   getFollowers(influencer, getState().influencerIds[influencer.payload], getState().followersToFetch, getState().placeholders[influencer.id])
-  .mapSeries(getUserProfile)
-  .mapSeries(parseProfile)
-  .mapSeries((profile) => dispatch(newProfileParsed(influencer)).return(profile))
-  .mapSeries((profile) => {
+  .map(getUserProfile)
+  .map(parseProfile)
+  .map((profile) => dispatch(newProfileParsed(influencer)).return(profile))
+  .map((profile) => {
     return profile
   })
   .filter(profile => profile.email != undefined)
@@ -201,43 +201,8 @@ const dispatchActions = () => {
       id: ID(),
       status: 0,
       batchId: getState().batch,
-      payload: 'whatveganseat',
-      'type': 'Hashtag'
-    })),
-    dispatch(createQuery({
-      id: ID(),
-      status: 0,
-      batchId: getState().batch,
-      payload: 'bestofvegan',
+      payload: 'garyvee',
       'type': 'Influencer'
-    })),
-    dispatch(createQuery({
-      id: ID(),
-      status: 0,
-      batchId: getState().batch,
-      payload: 'vegansofig',
-      'type': 'Hashtag'
-    })),
-    dispatch(createQuery({
-      id: ID(),
-      status: 0,
-      batchId: getState().batch,
-      payload: 'rawfoodshare',
-      'type': 'Hashtag'
-    })),
-    dispatch(createQuery({
-      id: ID(),
-      status: 0,
-      batchId: getState().batch,
-      payload: 'veganfitness',
-      'type': 'Hashtag'
-    })),
-    dispatch(createQuery({
-      id: ID(),
-      status: 0,
-      batchId: getState().batch,
-      payload: 'plantpower',
-      'type': 'Hashtag'
     }))
   ])
 }
@@ -361,10 +326,10 @@ const start = () => {
   .catch(console.log)
 }
 
-start()
 
 
 
+dispatchActions()
 
 
 
