@@ -329,7 +329,7 @@ const start = () => {
 
 
 
-dispatchActions()
+start()
 
 
 
