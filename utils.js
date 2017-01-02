@@ -22,9 +22,3 @@ export const eliminateDuplicates = (array) => {
   }
   return out
 }
-export const statusText = {
-  0: 'Not Started',
-  1: 'Running',
-  2: 'Stopped',
-  3: 'Finished'
-}
