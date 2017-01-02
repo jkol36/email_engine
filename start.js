@@ -196,17 +196,7 @@ const listenForStoreUpdates = () => {
     }))
   })
 }
-const dispatchActions = () => {
-  return Promise.all([
-    dispatch(createQuery({
-      id: ID(),
-      status: 0,
-      batchId: getState().batch,
-      payload: 'garyvee',
-      'type': 'Influencer'
-    }))
-  ])
-}
+
 const syncStoreWithDataFromFirebase = () => {
   console.log('syncing store with data...')
   return Promise.all([
