@@ -1,221 +1,250 @@
-import { influencerRef, hashtagRef, followerCount} from './config';
+import {ID} from './utils'
+import { 
+  followerCount, 
+  pictureCount,
+  queryRef,
+  botRef,
+  queryResultRef,
+  influencerIdRef,
+  emailRef,
+  placeholderRef,
+  profilesParsedRef,
+  lastBatchRef
+} from './config';
+import { statusText } from './utils'
 import { getFollowers, getPostsForHashtag } from './helpers';
 import {
-  EMAILS_FOUND_FOR_HASHTAG,
-  EMAILS_FOUND_FOR_INFLUENCER,
-  SAVE_INFLUENCER,
-  INFLUENCER_STARTED,
-  INFLUENCER_STOPPED,
-  SAVE_HASHTAG,
-  HASHTAG_STARTED,
-  HASHTAG_STOPPED,
-  DUMP_FOLLOWERS_FOR_INFLUENCER,
-  DUMP_POSTS_FOR_HASHTAG,
-  ANOTHER_FOLLOWER_PARSED,
-  ANOTHER_PROFILE_PARSED
+  INITIAL_QUERIES_FETCHED,
+  QUERY_ADDED,
+  QUERY_UPDATED,
+  QUERY_RESULT_ADDED,
+  QUERY_RESULT_UPDATED,
+  EMAIL_FOUND,
+  INITIAL_INFLUENCER_ID,
+  PLACEHOLDER_UPDATED,
+  NEW_PROFILE_PARSED,
+  NEW_BATCH_CREATED,
+  LAST_BATCH_ID_FETCHED,
+  EMPTY_STORE,
+  FOLLOWER_SETTING_FOUND,
+  PIC_SETTING_FOUND
 } from './reducers';
 
 
-
-export const getInitialStateForInfluencer = (influencer) => (dispatch, getState) => {
-  return new Promise((resolve, reject) => {
-    if(getState().influencers[influencer.id] != undefined) {
-      resolve(getState().influencers[influencer.id])
-    }
-    else {
-      influencerRef.child(influencer.id).once('value', s => {
-        if(s.exists()) {
-          dispatch(saveInfluencer(influencer, s.val()))
-          .then(() => resolve(s.val()))
-        }
-        else {
-          resolve('run_initial')
-        }
-      })
-    }
-
-  });
-};
-export const getInitialStateForHashtag = (hashtag) => (dispatch, getState) => {
-  console.log('getting initial state for hashtag', hashtag)
-  return new Promise((resolve, reject) => {
-    if(getState().hashtags[hashtag.id] != undefined) {
-      resolve(getState().hashtags[hashtag.id])
-    }
-    else {
-      hashtagRef.child(hashtag.id).once('value', s => {
-        if(s.exists()) {
-          //check to see if hasNextPage is false. If it's false, check the time the hashtag was last run
-          //if the difference btween the time now and the time the hashtag was last run is more than 12 hours, 
-          //run again.
-          dispatch(saveHashtag(hashtag, s.val()))
-          .then(() => resolve(s.val()))
-        }
-        else {
-          resolve('run_initial')
-        }
-      })
-    }
-
-  });
-};
-
-export const anotherFollowerParsed = (influencer) => (dispatch, getState) => {
-  return new Promise((resolve, reject) => {
-    influencerRef.child(influencer.id).child('followersParsed').transaction(currentValue => currentValue + 1, () => {
-      dispatch({type: ANOTHER_FOLLOWER_PARSED, influencer})
+export const followerSettingFound = (followerSetting) => dispatch => {
+  return new Promise(resolve => {
+    dispatch({
+      type: FOLLOWER_SETTING_FOUND,
+      value: followerSetting
     })
+    resolve(followerSetting)
   })
 }
-export const anotherProfileParsed = (hashtag) => (dispatch, getState) => {
-  return new Promise((resolve, reject) => {
-    hashtagRef.child(hashtag.id).child('profilesParsed').transaction(currentValue => currentValue + 1, () => {
-      dispatch({type: ANOTHER_PROFILE_PARSED, hashtag})
+export const picsSettingFound = (picsSetting) => dispatch => {
+  return new Promise(resolve => {
+    dispatch({
+      type: PIC_SETTING_FOUND,
+      value: picsSetting
     })
+    resolve(picsSetting)
   })
-}
-export const getNextStateForHashtag = (hashtag) => (dispatch, getState) => {
-  return new Promise((resolve, reject) => {
-    let {pageInfo:{nextPage, lastPage, hasNextPage}, posts} = getState().hashtags[hashtag.id]
-    if(!hasNextPage) {
-      dispatch(saveHashtag(hashtag, {hasNextPage})).then(resolve('done'))
-    }
-    else {
-      dispatch(dumpPostsForHashtag(hashtag))
-      .then(() => getPostsForHashtag(hashtag.query, nextPage, 10))
-      .then(data => {
-        let {pageInfo, posts} = data
-        return dispatch(saveHashtag(hashtag, {posts, pageInfo}))
-      })
-      .then(() => resolve(hashtag))
-
-    }
-
-  })
-}
-export const influencerStarted = (influencer) => (dispatch, getState) => {
-  return new Promise((resolve, reject) => {
-    influencerRef.child(influencer.id).child('status').set('running', () => {
-      dispatch({type: INFLUENCER_STARTED, influencer})
-      resolve()
+}  
+export const emptyStore = () => (dispatch, getState) => {
+  return new Promise(resolve => {
+    dispatch({
+      type: EMPTY_STORE
     })
-  })
-}
-export const influencerHaltedWithError = (influencer, error) => (dispatch, getState) => {
-  return new Promise((resolve, reject) => {
-    influencerRef.child(influencer.id).child('status').set(error, () => {
-      influencerRef.child(influencer.id).child('error').update({error}, () => {
-        resolve()
-      })
-    })
-  })
-}
-export const hashtagStarted = (hashtag) => (dispatch, getState) => {
-  return new Promise((resolve, reject) => {
-    hashtagRef.child(hashtag.id).child('status').set('running', () => {
-      dispatch({type: HASHTAG_STARTED, hashtag})
-      resolve()
-    })
-  })
-}
-export const hashtagStopped = (hashtag) => (dispatch, getState) => {
-  return new Promise((resolve, reject) => {
-    hashtagRef.child(hashtag.id).child('status').set('stopped', () => {
-      dispatch({type: HASHTAG_STOPPED, hashtag})
-      resolve()
-    })
-  })
-}
-export const hashtagHaltedWithError = (hashtag, error) => (dispatch, getState) => {
-  return new Promise((resolve, reject) => {
-    hashtagRef.child(hashtag.id).child('status').set(error, () => {
-      hashtagRef.child(hashtag.id).child('error').update({error}, () => {
-        resolve()
-      })
-    })
-  })
-}
-export const influencerStopped = (influencer) => (dispatch, getState) => {
-  return new Promise((resolve, reject) => {
-    influencerRef.child(influencer.id).child('status').set('stopped', () => {
-      dispatch({type: INFLUENCER_STOPPED, influencer})
-      resolve()
-    })
-  })
-}
-export const dumpPostsForHashtag = (hashtag) => (dispatch, getState) => {
-  return new Promise((resolve, reject) => {
-    dispatch({type:DUMP_POSTS_FOR_HASHTAG, hashtag})
     resolve()
   })
 }
-
-
-export const saveInfluencer = (influencer, data) => (dispatch, getState) => {
-  return new Promise((resolve, reject) => {
-    influencerRef.child(influencer.id).update(data, () => {
-      dispatch({type: SAVE_INFLUENCER, influencer, data})
+export const initialPlaceholdersFetched = (placeholders) => dispatch => {
+  let queryIds = Object.keys(placeholders)
+  return Promise.mapSeries(queryIds, (queryId) => {
+    return new Promise(resolve => {
+       dispatch({
+        type: PLACEHOLDER_UPDATED,
+        placeholder: placeholders[queryId],
+        queryId
+      })
       resolve()
     })
   })
 }
-
-export const saveHashtag = (hashtag, data) => (dispatch, getState) => {
-  return new Promise((resolve, reject) => {
-    hashtagRef.child(hashtag.id).update(data, () => {
-      dispatch({type: SAVE_HASHTAG, hashtag, data})
+export const initialInfluencerIdsFetched = (influencerIds) => dispatch => {
+  return new Promise(resolve => {
+    let influencerNames = Object.keys(influencerIds)
+    return Promise.mapSeries(influencerNames, (name) => {
+      let query = {
+        payload: name
+      }
+      dispatch({
+        type: INITIAL_INFLUENCER_ID,
+        id: influencerIds[name],
+        query
+      })
       resolve()
     })
   })
 }
-export const emailFoundForHashtag = (hashtag, email) => (dispatch, getState) => {
-  return new Promise((resolve, reject) => {
-      hashtagRef.child(hashtag.id).child('emails_found').transaction(currentValue => currentValue+1, () => {
-        hashtagRef.child(hashtag.id).child('emails').push(email, () => {
-        dispatch({type: EMAILS_FOUND_FOR_HASHTAG, hashtag, email});
-        resolve();
-      });
+export const createBatch = () => dispatch => {
+  return new Promise(resolve => {
+    let newBatchId = ID()
+    lastBatchRef.set({id:newBatchId}, () => {
+      dispatch({
+        type: NEW_BATCH_CREATED,
+        newBatchId
+      })
+      resolve(newBatchId)
     })
-    .catch(err => console.log(err))
-  });
-};
-export const emailFoundForInfluencer = (influencer, email) => (dispatch, getState) => {
-  return new Promise((resolve, reject) => {
-      influencerRef.child(influencer.id).child('emails_found').transaction(currentValue => currentValue + 1, () => {
-        influencerRef.child(influencer.id).child('emails').push(email, () => {
-        dispatch({type: EMAILS_FOUND_FOR_INFLUENCER, influencer, email});
-        resolve();
-      });
-    })
-    .catch(err => reject(err))
   })
-};
-
-
-
-export const dumpFollowersForInfluencer = (influencer) => (dispatch, getState) => {
+}
+export const initialQueriesFetched = queries => dispatch => {
+  return new Promise(resolve => {
+    dispatch({
+      type: INITIAL_QUERIES_FETCHED,
+      queries
+    })
+  })
+}
+export const lastBatchIdFetched = (batchId) => dispatch => {
+  console.log('got last batch id', batchId)
+  return new Promise(resolve => {
+    dispatch({
+      type: LAST_BATCH_ID_FETCHED,
+      batchId
+    })
+  })
+}
+export const placeholderUpdated = (query, placeholder) => dispatch => {
   return new Promise((resolve, reject) => {
-    dispatch({type:DUMP_FOLLOWERS_FOR_INFLUENCER, influencer})
-    resolve()
+    placeholderRef.child(query.id).set(placeholder, () => {
+      dispatch({
+        type: PLACEHOLDER_UPDATED,
+        placeholder,
+        queryId: query.id
+      })
+      resolve(placeholder)
+    })
+
+  })
+}
+export const initialInfluencerId = (influencerId, query) => (dispatch) => {
+  return new Promise((resolve, reject) => {
+    influencerIdRef.child(query.payload).set(influencerId, () => {
+      dispatch({
+        type: INITIAL_INFLUENCER_ID,
+        id: influencerId,
+        query
+      })
+      resolve(influencerId)
+    })
+  })
+}
+export const createQuery = (query={}) => (dispatch) => {
+  return new Promise((resolve, reject) => {
+    queryRef.child(query.id).set(query, () => {
+      dispatch({
+        type: QUERY_ADDED,
+        query
+      })
+      resolve(query.id)
+    })
+  })
+}
+export const startQuery = (id) => (dispatch) => {
+  return new Promise(resolve => {
+    queryRef.child(id).update({
+      statusText: 'running',
+      status: 1
+    }, () => {
+      dispatch({
+        type: QUERY_UPDATED,
+        query: {status:1, statusText:'running'}
+      })
+    })
+  })
+}
+export const stopQuery = (id) => (dispatch) => {
+  return new Promise(resolve => {
+    queryRef.child(id).update({
+      statusText: 'stopped',
+      status: 2
+    })
   })
 }
 
-export const getNextStateForInfluencer = (influencer) => (dispatch, getState) => {
+export const updateQuery = (id, query={}) => (dispatch) => {
   return new Promise((resolve, reject) => {
-    let {pageInfo:{nextPage, lastPage, hasNextPage}, followers, userId} = getState().influencers[influencer.id]
-    if(!hasNextPage) {
-      dispatch(saveInfluencer(influencer, {hasNextPage})).then(resolve('done'))
+    queryRef.child(id).update(query, () => {
+      dispatch({
+        type: QUERY_UPDATED,
+        id,
+        query
+      })
+      resolve(query)
+    })
+  })
+}
+
+
+export const createQueryResult = (query, queryResult={}) => (dispatch) => {
+  return new Promise((resolve, reject) => {
+    botRef.child('totalQueryResults').transaction(currentValue => currentValue +1)
+    queryResultRef.child(query.id).push(queryResult, () => {
+      dispatch({
+        type: QUERY_RESULT_ADDED,
+        queryResult,
+        queryId: query.id
+      })
+      resolve(query.id)
+    })
+  })
+}
+
+
+
+export const updateQueryResult = (queryId=123, queryResult={}) => (dispatch) => {
+  return new Promise((resolve, reject) => {
+    queryResultRef.child(queryId).update(queryResult, () => {
+      dispatch({
+        type: QUERY_RESULT_UPDATED,
+        queryResult,
+        queryId
+      })
+      resolve(queryResult)
+    })
+  })
+}
+
+
+//generalize queries
+//query can be of type influencer or type hashtag
+export const getInitialStateForQuery = (query={}) => (dispatch, getState) => {
+  return new Promise((resolve, reject) => {
+    if(getState().placeholders[query.id] != undefined) {
+      resolve('run_normal')
+    }
+    else if(getState().placeholders[query.id] === null) {
+      resolve('query finished')
     }
     else {
-      dispatch(dumpFollowersForInfluencer(influencer))
-      .then(() => getFollowers(userId, followerCount, nextPage))
-      .then(data => {
-        let {pageInfo, followers} = data
-        return dispatch(saveInfluencer(influencer, {followers, pageInfo}))
-      })
-      .then(() => resolve(influencer))
-
+      resolve('run_initial')
     }
-
   })
 }
+
+export const newProfileParsed = (query) => (dispatch) => {
+  return new Promise((resolve, reject) => {
+    botRef.child('totalProfilesParsed').transaction(currentValue => currentValue+1, () => {
+      profilesParsedRef.child(query.id).transaction(currentValue => currentValue + 1, () => {
+        dispatch({type: NEW_PROFILE_PARSED, query })
+        resolve(query)
+      })
+    })
+  })
+}
+
+
+
+
+

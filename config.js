@@ -1,4 +1,3 @@
-require('@risingstack/trace');
 import firebase from 'firebase';
 const serviceAccount = require('./igbot-serviceaccount.json');
 
@@ -20,14 +19,21 @@ export const headers = {
   'referer': 'https://www.instagram.com/explore/tags/poker/',
   'authority': 'www.instagram.com'
 };
-export const currentVersion = 'test'
-export const botRef = firebase.database().ref('igbot')
+export const currentVersion = 'email_mine'
+export const uniqueEmailRef = firebase.database().ref(`igbot/${currentVersion}/uniqueEmails`)
+export const uniqueEmailCount = firebase.database().ref(`igbot/${currentVersion}/uniqueEmailCount`)
+export const currentBatchRef = firebase.database().ref(`igbot/${currentVersion}/currentBatchId`)
+export const lastBatchRef = firebase.database().ref(`igbot/${currentVersion}/lastBatchId`)
+export const botRef = firebase.database().ref(`igbot/${currentVersion}`)
 export const queryRef = firebase.database().ref(`igbot/${currentVersion}/queries`)
-export const influencerRef = firebase.database().ref(`igbot/${currentVersion}/influencers`)
+export const placeholderRef = firebase.database().ref(`igbot/${currentVersion}/placeholders`)
+export const profilesParsedRef = firebase.database().ref(`igbot/${currentVersion}/profilesParsed`)
+export const queryResultRef = firebase.database().ref(`igbot/${currentVersion}/queryResults`)
+export const influencerIdRef = firebase.database().ref(`igbot/${currentVersion}/influencerIds`)
 export const suggestionRef = firebase.database().ref(`igbot/${currentVersion}/querySuggestions`)
 export const suggestionResultRef = firebase.database().ref(`igbot/${currentVersion}/querySuggestionResults`)
-export const hashtagRef = firebase.database().ref(`igbot/${currentVersion}/hashtags`)
 export const userSessionRef = firebase.database().ref(`igbot/${currentVersion}/anonymousUserSessions`)
-export const pictureCount = 12
-export const followerCount = 12
+export const emailRef = firebase.database().ref(`igbot/${currentVersion}/emails`)
+export const defaultPicsToFetch = 12
+export const defaultFollowersToFetch = 12
 global.Promise = require('bluebird');

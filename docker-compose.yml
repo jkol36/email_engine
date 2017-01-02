@@ -1,0 +1,6 @@
+email_engine:
+  build: .
+  command: node_modules/.bin/nodemon index.js
+  volumes:
+    - .:/home/jon/email_engine
+    - .:/home/jon/email_engine/node_modules
