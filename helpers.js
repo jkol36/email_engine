@@ -114,7 +114,6 @@ export const getFollowers = (query, userId, count, placeholder) => {
     .send(dataString)
     .then(res => {
       let followerArray = res.body.followed_by.nodes.map(follower => follower.username)
-      console.log('length of follower array', followerArray.length)
       return dispatch(placeholderUpdated(query,res.body.followed_by.page_info.end_cursor)).return(followerArray)
     })
 

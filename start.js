@@ -1,3 +1,4 @@
+import firebase from 'firebase'
 import {
   queryRef, 
   lastBatchRef,
@@ -48,10 +49,7 @@ import {store} from './store'
 
 const {getState, dispatch} = store
 
-const saveInstagramProfile = (profile, query) => {
-  console.log('saving profile', profile)
-  return new Promise(resolve => resolve(profile))
-}
+
 
 
 const startPicChain = (pics, query) => {
@@ -113,7 +111,6 @@ const startInfluencerChain = (query) => {
   console.log('starting influener', query)
   return dispatch(getInitialStateForQuery(query))
           .then(state => {
-            console.log(state)
             switch(state) {
               case 'run_initial':
                   return getInfluencerId(query).then(() => runNormalForInfluencer(query))
@@ -126,7 +123,6 @@ const startInfluencerChain = (query) => {
 } 
 
 const runNormalForInfluencer = (influencer={}) => {
-  console.log(`fetching ${getState().followersToFetch} followers`)
   getFollowers(influencer, getState().influencerIds[influencer.payload], getState().followersToFetch, getState().placeholders[influencer.id])
   .map(getUserProfile)
   .map(parseProfile)
@@ -154,9 +150,8 @@ const runNormalForInfluencer = (influencer={}) => {
 }
 
 const listenForFirebaseUpdates = () => {
-  console.log('call')
+  console.log('listening for firebase updates...')
   return new Promise(resolve => {
-    console.log('listening for firebase updates')
     return Promise.all([
       botRef.child('followersToFetch').on('child_changed', snap => {
         console.log('followers setting changed')
@@ -216,7 +211,6 @@ const syncStoreWithDataFromFirebase = () => {
       }
     }),
     influencerIdRef.once('value', snap => {
-      console.log('influencerids', snap.val())
       if(snap.exists()) {
         return dispatch(initialInfluencerIdsFetched(snap.val()))
       }
@@ -265,49 +259,56 @@ const startQueriesFromLastBatch = () => {
 
   })
 }
-const updateResults = () => {
-  return queryResultRef.once('value', snap => {
-    if(snap.exists()) {
-      let emailList = []
-      let rootObj = snap.val()
-      let queryIds = Object.keys(rootObj)
-      let initialResults = []
-      queryIds.map(queryId => {
-        let resultsForQueryId = rootObj[queryId]
-        let resultIds = Object.keys(resultsForQueryId)
-        resultIds.map(resultId => {
-          let resultObjForQueryId = Object.assign({}, resultsForQueryId[resultId], {queryId})
-          emailList.push(resultObjForQueryId.email)
-          initialResults.push(resultObjForQueryId)
+const getUnique = () => {
+  return new Promise(resolve => {
+    queryResultRef.once('value', snap => {
+      if(snap.exists()) {
+        let emailList = []
+        let rootObj = snap.val()
+        let queryIds = Object.keys(rootObj)
+        let initialResults = []
+        queryIds.map(queryId => {
+          let resultsForQueryId = rootObj[queryId]
+          let resultIds = Object.keys(resultsForQueryId)
+          resultIds.map(resultId => {
+            let resultObjForQueryId = Object.assign({}, resultsForQueryId[resultId], {queryId})
+            emailList.push(resultObjForQueryId.email)
+            initialResults.push(resultObjForQueryId)
+          })
         })
+        let finalEmailList = eliminateDuplicates(emailList)
+        resolve({unique:finalEmailList, all:initialResults})
+      }
+    })
+  })
+}
+
+const updateResults = () => {
+  console.log('updating results')
+  getUnique().then((data) => {
+    return new Promise(resolve => {
+      uniqueEmailCount.set(data.unique.length, () => {
+        setTimeout(() => updateResults(), 100000)
+        resolve(data.unique.length)
       })
-      let finalEmailList = eliminateDuplicates(emailList)
-      uniqueEmailCount.set(finalEmailList.length)
-      uniqueEmailRef.set({})
-      finalEmailList.forEach(email => {
-        let found = initialResults.filter(result => result.email === email)[0]
-        uniqueEmailRef.push(found)
-      })
-    }
+
+    })
   })
 }
 const setup = () => {
-  return new Promise(resolve => {
-    listenForStoreUpdates()
-    listenForFirebaseUpdates()
-    let now = Date.now()
-    botRef.child('lastRestart').set({lastRetart: now})
-    setInterval(() => {
+  let now = Date.now()
+  botRef.child('lastRestart').set({lastRetart: now})
+  setInterval(() => {
       let upTime = Date.now() - now
       let minutesUp = new Date(upTime).getMinutes()
       botRef.child('UpTime').set({minutes:minutesUp})
-      emptyStore()
-      updateResults()
-    }, 100000)
-    //restart every 10 minutes
-    setInterval(() => process.exit(), 600000)
-    setTimeout(() => resolve(), 2000)
-  })
+      dispatch(emptyStore()).then(() => console.log('emptied store'))
+    }, 20000)
+  return Promise.all([
+    listenForFirebaseUpdates(),
+    listenForStoreUpdates(),
+    updateResults()
+  ])
 }
 const start = () => {
   setup()
@@ -317,11 +318,37 @@ const start = () => {
   .catch(process.exit)
 }
 
+const parseResults = (results) => {
+  let {all, unique} = results
+  return Promise.all(Promise.map(unique, (item, index) => {
+    console.log(`parsing results ${index/unique.length}`)
+    return new Promise(resolve => {
+      let found = all.filter(obj => obj.email === item)[0]
+      resolve(found)
+    })
+  })) 
+}
+const saveResult = (result) => {
+  return uniqueEmailRef.push(result)
 
-
+}
+const exportToCsv = () => {
+  getUnique().then(parseResults).map(saveResult).then(() => console.log('done'))
+  var csvExport = require('csv-export')
+  var fs = require('fs')
+  let data = []
+  uniqueEmailRef.orderByKey().once('value', snap => {
+    Object.keys(snap.val()).map((k, index, arr) => {
+      console.log(`percentage parsed ${index/arr.length}`)
+      let obj = snap.val()[k]
+      data.push(obj)
+    })
+    csvExport.export(data, (buffer) => {
+      fs.writeFileSync('./veganMarket.zip', buffer)
+    })
+  })
+}
 
 start()
-
-
 
 
