@@ -322,6 +322,48 @@ const dispatchQueries = () => {
   ]
   return Promise.all(Promise.map(queries, query => dispatch(createQuery(query))))
 }
+const updateResults = () => {
+  console.log('updating results')
+  getUnique().then((data) => {
+    return new Promise(resolve => {
+      uniqueEmailCount.set(data.unique.length, () => {
+        setTimeout(() => updateResults(), 100000)
+        resolve(data.unique.length)
+      })
+
+    })
+  })
+}
+const parseResults = (results) => {
+  let {all, unique} = results
+  return Promise.all(Promise.map(unique, (item, index) => {
+    console.log(`parsing results ${index/unique.length}`)
+    return new Promise(resolve => {
+      let found = all.filter(obj => obj.email === item)[0]
+      resolve(found)
+    })
+  })) 
+}
+const saveResult = (result) => {
+  return uniqueEmailRef.push(result)
+
+}
+const exportToCsv = () => {
+  getUnique().then(parseResults).map(saveResult).then(() => console.log('done'))
+  var csvExport = require('csv-export')
+  var fs = require('fs')
+  let data = []
+  uniqueEmailRef.orderByKey().once('value', snap => {
+    Object.keys(snap.val()).map((k, index, arr) => {
+      console.log(`percentage parsed ${index/arr.length}`)
+      let obj = snap.val()[k]
+      data.push(obj)
+    })
+    csvExport.export(data, (buffer) => {
+      fs.writeFileSync('./veganMarket.zip', buffer)
+    })
+  })
+}
 
 const start = () => {
   setup()
