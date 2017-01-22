@@ -10,7 +10,8 @@ import {
   defaultPicsToFetch,
   uniqueEmailRef,
   uniqueEmailCount,
-  queryResultRef
+  queryResultRef,
+  currentVersion
 } from './config'
 import {ID, listify, eliminateDuplicates} from './utils'
 import {
@@ -265,32 +266,7 @@ const startQueriesFromLastBatch = () => {
 
   })
 }
-const updateResults = () => {
-  return queryResultRef.once('value', snap => {
-    if(snap.exists()) {
-      let emailList = []
-      let rootObj = snap.val()
-      let queryIds = Object.keys(rootObj)
-      let initialResults = []
-      queryIds.map(queryId => {
-        let resultsForQueryId = rootObj[queryId]
-        let resultIds = Object.keys(resultsForQueryId)
-        resultIds.map(resultId => {
-          let resultObjForQueryId = Object.assign({}, resultsForQueryId[resultId], {queryId})
-          emailList.push(resultObjForQueryId.email)
-          initialResults.push(resultObjForQueryId)
-        })
-      })
-      let finalEmailList = eliminateDuplicates(emailList)
-      uniqueEmailCount.set(finalEmailList.length)
-      uniqueEmailRef.set({})
-      finalEmailList.forEach(email => {
-        let found = initialResults.filter(result => result.email === email)[0]
-        uniqueEmailRef.push(found)
-      })
-    }
-  })
-}
+
 const setup = () => {
   return new Promise(resolve => {
     listenForStoreUpdates()
@@ -348,19 +324,50 @@ const saveResult = (result) => {
   return uniqueEmailRef.push(result)
 
 }
-const exportToCsv = () => {
-  getUnique().then(parseResults).map(saveResult).then(() => console.log('done'))
-  var csvExport = require('csv-export')
-  var fs = require('fs')
-  let data = []
-  uniqueEmailRef.orderByKey().once('value', snap => {
-    Object.keys(snap.val()).map((k, index, arr) => {
-      console.log(`percentage parsed ${index/arr.length}`)
-      let obj = snap.val()[k]
-      data.push(obj)
+const getUnique = () => {
+  return new Promise(resolve => {
+    queryResultRef.once('value', snap => {
+      if(snap.exists()) {
+        let emailList = []
+        let rootObj = snap.val()
+        let queryIds = Object.keys(rootObj)
+        let initialResults = []
+        queryIds.map(queryId => {
+          let resultsForQueryId = rootObj[queryId]
+          let resultIds = Object.keys(resultsForQueryId)
+          resultIds.map(resultId => {
+            let resultObjForQueryId = Object.assign({}, resultsForQueryId[resultId], {queryId})
+            emailList.push(resultObjForQueryId.email)
+            initialResults.push(resultObjForQueryId)
+          })
+        })
+        let finalEmailList = eliminateDuplicates(emailList)
+        resolve({unique:finalEmailList, all:initialResults})
+      }
     })
-    csvExport.export(data, (buffer) => {
-      fs.writeFileSync('./veganMarket.zip', buffer)
+  })
+}
+
+const exportToCsv = () => {
+  getUnique().then(parseResults).map(saveResult).then(() => {
+    var csvExport = require('csv-export')
+    var fs = require('fs')
+    let data = []
+    uniqueEmailRef.orderByKey().once('value', snap => {
+      if(snap.exists()) {
+        console.log('exists')
+      }
+      else {
+        console.log('does not exist')
+      }
+      Object.keys(snap.val()).map((k, index, arr) => {
+        console.log(`percentage parsed ${index/arr.length}`)
+        let obj = snap.val()[k]
+        data.push(obj)
+      })
+      csvExport.export(data, (buffer) => {
+        fs.writeFileSync(`./${currentVersion}.zip`, buffer)
+      })
     })
   })
 }
@@ -374,7 +381,7 @@ const start = () => {
   .catch(process.exit)
 }
 
-start()
+exportToCsv()
 
 
 
