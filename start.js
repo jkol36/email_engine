@@ -309,18 +309,32 @@ const setup = () => {
     setTimeout(() => resolve(), 2000)
   })
 }
+
+
+const dispatchQueries = () => {
+  let queries = [
+    {
+      type: 'Influencer', 
+      id: ID(),
+      batchId: getState().batch,
+      payload: 'garyvee'
+    }
+  ]
+  return Promise.all(Promise.map(queries, query => dispatch(createQuery(query))))
+}
+
 const start = () => {
   setup()
   .then(syncStoreWithDataFromFirebase)
   .then(() => dispatch(createBatch()))
+  .then(dispatchQueries)
   .then(startQueriesFromLastBatch)
   .catch(process.exit)
 }
 
-
-
-
 start()
+
+
 
 
 
