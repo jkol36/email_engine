@@ -279,7 +279,7 @@ const setup = () => {
       let minutesUp = new Date(upTime).getMinutes()
       botRef.child('UpTime').set({minutes:minutesUp})
       emptyStore()
-      updateResults()
+      updateResults().then(start)
     }, 100000)
     //restart every 10 minutes
     setInterval(() => process.exit(), 600000)
