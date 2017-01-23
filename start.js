@@ -145,11 +145,11 @@ const runNormalForInfluencer = (influencer={}) => {
   })
   .then(() => runNormalForInfluencer(influencer))
   .catch(err => {
-    switch(err.code) {
+    switch(err.status) {
       case 404:
         return runNormalForInfluencer(influencer)
-      default:
-        console.log(err)
+      case 429:
+        console.log('got 429 err')
         process.exit()
     }
   })
@@ -378,7 +378,15 @@ const start = () => {
   .then(syncStoreWithDataFromFirebase)
   .then(() => dispatch(createBatch()))
   .then(startQueriesFromLastBatch)
-  .catch(process.exit)
+  .catch(err => {
+    console.log('got error ', err.status)
+    switch(err.status) {
+      case 429:
+        return
+      default:
+        process.exit()
+    }
+  })
 }
 
 //run this first
@@ -386,7 +394,14 @@ const startInitialQueries = () => {
   setup()
   .then(dispatch(createBatch()))
   .then(dispatchQueries)
-  .catch(process.exit)
+  .catch(err => {
+    switch(err.status) {
+      case 429:
+        return
+      default:
+        process.exit()
+    }
+  })
 }
 
 start()
