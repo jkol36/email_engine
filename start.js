@@ -1,3 +1,4 @@
+import firebase from 'firebase'
 import {
   queryRef, 
   lastBatchRef,
@@ -376,12 +377,25 @@ const start = () => {
   setup()
   .then(syncStoreWithDataFromFirebase)
   .then(() => dispatch(createBatch()))
-  .then(dispatchQueries)
   .then(startQueriesFromLastBatch)
   .catch(process.exit)
 }
 
-exportToCsv()
+//run this first
+const startInitialQueries = () => {
+  setup()
+  .then(dispatch(createBatch()))
+  .then(dispatchQueries)
+  .catch(process.exit)
+}
+
+start()
+
+
+
+
+
+
 
 
 
