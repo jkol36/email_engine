@@ -294,14 +294,26 @@ const dispatchQueries = () => {
       type: 'Influencer', 
       id: ID(),
       batchId: getState().batch,
-      payload: 'garyvee'
-    }
+      payload: 'gillette'
+    },
+    {
+      type: 'Influencer', 
+      id: ID(),
+      batchId: getState().batch,
+      payload: 'harrys'
+    },
+    {
+      type: 'Influencer', 
+      id: ID(),
+      batchId: getState().batch,
+      payload: 'dollarshaveclub'
+    },
   ]
   return Promise.all(Promise.map(queries, query => dispatch(createQuery(query))))
 }
 const updateResults = () => {
   console.log('updating results')
-  getUnique().then((data) => {
+  return getUnique().then((data) => {
     return new Promise(resolve => {
       uniqueEmailCount.set(data.unique.length, () => {
         setTimeout(() => updateResults(), 100000)
@@ -404,7 +416,7 @@ const startInitialQueries = () => {
   })
 }
 
-start()
+
 
 
 
