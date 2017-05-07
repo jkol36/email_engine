@@ -12,8 +12,18 @@ export const NEW_BATCH_CREATED = 'NEW_BATCH_CREATED'
 export const EMPTY_STORE = 'EMPTY_STORE'
 export const PIC_SETTING_FOUND = 'PIC_SETTING_FOUND'
 export const FOLLOWER_SETTING_FOUND = 'FOLLOWER_SETTING_FOUND'
+export const EMAIL_CONTACTED = 'EMAIL_CONTACTED'
+export const INITIAL_EMAIL_CONTACTED = 'INITIAL_EMAIL_CONTACTED'
+export const COUNT_CHANGED = 'COUNT_CHANGED'
 
-
+export const count = (state=0, action) => {
+  switch(action.type) {
+    case COUNT_CHANGED:
+      return action.count
+    default:
+      return state
+  }
+}
 export const picsToFetch = (state=10, action) => {
   switch(action.type) {
     case PIC_SETTING_FOUND:
@@ -88,6 +98,16 @@ export const emails = (state = [], action) => {
       return state;
   }
 };
+
+export const emailsContacted = (state = [], action) => {
+  switch(action.type) {
+    case INITIAL_EMAIL_CONTACTED:
+    case EMAIL_CONTACTED:
+      return [...state, action.email]
+    default:
+      return state
+  }
+}
 
 export const profilesParsed = (state={}, action) => {
   switch(action.type) {

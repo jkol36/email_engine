@@ -50,10 +50,6 @@ import {store} from './store'
 
 const {getState, dispatch} = store
 
-const saveInstagramProfile = (profile, query) => {
-  console.log('saving profile', profile)
-  return new Promise(resolve => resolve(profile))
-}
 
 
 const startPicChain = (pics, query) => {
@@ -250,7 +246,8 @@ const startQueriesFromLastBatch = () => {
     }
     let queriesFromLastBatch = listify(getState().initialQueries)
                                 .filter(query => query.batchId === getState().lastBatchId.id)
-                                .filter(query => query.status != 3)
+                                .filter(query => query.status !== 3)
+    console.log(queriesFromLastBatch.length)
     Promise.all(Promise.map(queriesFromLastBatch, (query) => {
       return dispatch(updateQuery(query.id, {status:1, batchId: getState().batch}))
       .then(() => {
@@ -279,7 +276,7 @@ const setup = () => {
       let minutesUp = new Date(upTime).getMinutes()
       botRef.child('UpTime').set({minutes:minutesUp})
       emptyStore()
-      updateResults().then(start)
+      updateResults().then(() => start())
     }, 100000)
     //restart every 10 minutes
     setInterval(() => process.exit(), 600000)
@@ -293,21 +290,23 @@ const dispatchQueries = () => {
     {
       type: 'Influencer', 
       id: ID(),
-      batchId: getState().batch,
-      payload: 'gillette'
+      batchId: ID(),
+      payload: 'dollarshaveclub'
     },
     {
       type: 'Influencer', 
       id: ID(),
-      batchId: getState().batch,
+      batchId: ID(),
       payload: 'harrys'
     },
     {
       type: 'Influencer', 
       id: ID(),
-      batchId: getState().batch,
-      payload: 'dollarshaveclub'
+      batchId: ID(),
+      payload: 'gillete'
     },
+
+
   ]
   return Promise.all(Promise.map(queries, query => dispatch(createQuery(query))))
 }
@@ -339,47 +338,47 @@ const saveResult = (result) => {
 }
 const getUnique = () => {
   return new Promise(resolve => {
-    queryResultRef.once('value', snap => {
-      if(snap.exists()) {
-        let emailList = []
-        let rootObj = snap.val()
-        let queryIds = Object.keys(rootObj)
-        let initialResults = []
-        queryIds.map(queryId => {
-          let resultsForQueryId = rootObj[queryId]
-          let resultIds = Object.keys(resultsForQueryId)
-          resultIds.map(resultId => {
-            let resultObjForQueryId = Object.assign({}, resultsForQueryId[resultId], {queryId})
-            emailList.push(resultObjForQueryId.email)
-            initialResults.push(resultObjForQueryId)
+    queryRef.once('value', s => {
+      let queries = s.val()
+      queryResultRef.once('value', snap => {
+        if(snap.exists()) {
+          let emailList = []
+          let rootObj = snap.val()
+          let queryIds = Object.keys(rootObj)
+          let initialResults = []
+          queryIds.map(queryId => {
+            let resultsForQueryId = rootObj[queryId]
+            let resultIds = Object.keys(resultsForQueryId)
+            resultIds.map(resultId => {
+              let resultObjForQueryId = Object.assign({}, resultsForQueryId[resultId], {query: queries[queryId] ? queries[queryId].payload: null})
+              emailList.push(resultObjForQueryId.email)
+              initialResults.push(resultObjForQueryId)
+            })
           })
-        })
-        let finalEmailList = eliminateDuplicates(emailList)
-        resolve({unique:finalEmailList, all:initialResults})
-      }
+          let finalEmailList = eliminateDuplicates(emailList)
+          resolve({unique:finalEmailList, all:initialResults})
+        }
+      })
     })
   })
 }
 
 const exportToCsv = () => {
-  getUnique().then(parseResults).map(saveResult).then(() => {
-    var csvExport = require('csv-export')
-    var fs = require('fs')
-    let data = []
-    uniqueEmailRef.orderByKey().once('value', snap => {
-      if(snap.exists()) {
-        console.log('exists')
-      }
-      else {
-        console.log('does not exist')
-      }
-      Object.keys(snap.val()).map((k, index, arr) => {
-        console.log(`percentage parsed ${index/arr.length}`)
-        let obj = snap.val()[k]
-        data.push(obj)
-      })
-      csvExport.export(data, (buffer) => {
-        fs.writeFileSync(`./${currentVersion}.zip`, buffer)
+  uniqueEmailRef.remove()
+  .then(() => {
+      return getUnique().then(parseResults).map(saveResult).then(() => {
+        var csvExport = require('csv-export')
+        var fs = require('fs')
+        let data = []
+        uniqueEmailRef.orderByKey().once('value', snap => {
+          Object.keys(snap.val()).map((k, index, arr) => {
+          console.log(`percentage parsed ${index/arr.length}`)
+          let obj = snap.val()[k]
+          data.push(obj)
+        })
+        csvExport.export(data, (buffer) => {
+          fs.writeFileSync(`./${currentVersion}.zip`, buffer)
+        })
       })
     })
   })
@@ -415,6 +414,21 @@ const startInitialQueries = () => {
     }
   })
 }
+
+const syncQueriesWithFirebase = () => {
+  return setup()
+  .then(dispatch(createBatch()))
+  .then(dispatchQueries)
+  .catch(console.log)
+}
+
+const startOver = () => {
+  require('./cleanup.js')
+}
+
+syncQueriesWithFirebase()
+
+
 
 
 

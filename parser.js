@@ -19,6 +19,7 @@ export const parseProfile = data => {
       returnData.id = json.entry_data.ProfilePage[0].user.id,
       returnData.followedBy = json.entry_data.ProfilePage[0].user.followed_by,
       returnData.follows = json.entry_data.ProfilePage[0].user.follows
+      returnData.name = json.entry_data.ProfilePage[0].user.full_name
       returnData.username = username
     }
     catch(err) {

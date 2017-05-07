@@ -1,4 +1,5 @@
 import {ID} from './utils'
+import mongoose from 'mongoose'
 import { 
   followerCount, 
   pictureCount,
@@ -27,10 +28,41 @@ import {
   LAST_BATCH_ID_FETCHED,
   EMPTY_STORE,
   FOLLOWER_SETTING_FOUND,
-  PIC_SETTING_FOUND
+  PIC_SETTING_FOUND,
+  EMAIL_CONTACTED,
+  INITIAL_EMAIL_CONTACTED,
+  COUNT_CHANGED
 } from './reducers';
 
 
+export const emailContacted = email => dispatch => {
+  return new Promise((resolve, reject) => {
+    mongoose
+      .model('emailsContacted')
+      .create({email, timestamp:Date.now()})
+      .then(res => res.save())
+      .then(() => {
+        dispatch({
+          type: EMAIL_CONTACTED,
+          email
+        })
+        return resolve(email)
+      })
+      .catch(err => reject(err))
+  })
+}
+
+export const initialSentEmails = emailArray => dispatch => {
+  return new Promise(resolve => {
+    emailArray.forEach(email => {
+      dispatch({
+        type: INITIAL_EMAIL_CONTACTED,
+        email: email._doc
+      })
+    })
+    resolve()
+  })
+}
 export const followerSettingFound = (followerSetting) => dispatch => {
   return new Promise(resolve => {
     dispatch({
@@ -174,6 +206,7 @@ export const stopQuery = (id) => (dispatch) => {
 }
 
 export const updateQuery = (id, query={}) => (dispatch) => {
+  console.log(`updating query ${id} ${query.payload}`) 
   return new Promise((resolve, reject) => {
     queryRef.child(id).update(query, () => {
       dispatch({
@@ -188,6 +221,7 @@ export const updateQuery = (id, query={}) => (dispatch) => {
 
 
 export const createQueryResult = (query, queryResult={}) => (dispatch) => {
+  console.log(`creating query result ${queryResult}`)
   return new Promise((resolve, reject) => {
     botRef.child('totalQueryResults').transaction(currentValue => currentValue +1)
     queryResultRef.child(query.id).push(queryResult, () => {
@@ -241,6 +275,20 @@ export const newProfileParsed = (query) => (dispatch) => {
         resolve(query)
       })
     })
+  })
+}
+
+export const countChanged = (count) => dispatch => {
+  return new Promise(resolve => {
+    mongoose.model('count')
+      .increment()
+      .then(res => {
+        dispatch({
+        type: COUNT_CHANGED,
+        count: res.count
+        })
+        resolve(res.count)
+      })
   })
 }
 

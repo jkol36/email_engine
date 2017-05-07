@@ -11,7 +11,9 @@ import {
   initialQueries,
   batch,
   picsToFetch,
-  followersToFetch
+  followersToFetch,
+  emailsContacted,
+  count
 } from './reducers';
 
 export const store = createStore(combineReducers({
@@ -25,6 +27,8 @@ export const store = createStore(combineReducers({
   initialQueries,
   batch,
   picsToFetch,
-  followersToFetch
+  followersToFetch,
+  emailsContacted,
+  count
 }), applyMiddleware(thunk));
 
