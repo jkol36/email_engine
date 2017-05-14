@@ -133,7 +133,12 @@ const getLocationForUser = user => {
     }
   })
   .then(picDetails => {
-    const {graphql:{shortcode_media:{location}}} = picDetails
+    try {
+      const {graphql:{shortcode_media:{location}}} = picDetails
+    }
+    catch(err) {
+      return null
+    }
     return location
   })
   .catch(console.log)
@@ -381,22 +386,24 @@ const getUnique = () => {
 }
 
 const exportToCsv = () => {
+  let data = []
   uniqueEmailRef.remove()
   .then(() => {
       return getUnique().then(parseResults).map(saveResult).then(() => {
-        var csvExport = require('csv-export')
-        var fs = require('fs')
-        let data = []
-        uniqueEmailRef.orderByKey().once('value', snap => {
+        return uniqueEmailRef.orderByKey().once('value', snap => {
           Object.keys(snap.val()).map((k, index, arr) => {
           console.log(`percentage parsed ${index/arr.length}`)
           let obj = snap.val()[k]
           data.push(obj)
         })
-        csvExport.export(data, (buffer) => {
-          fs.writeFileSync(`./${currentVersion}.zip`, buffer)
-        })
       })
+    })
+  })
+  .then(() => {
+    var csvExport = require('csv-export')
+    var fs = require('fs')
+    csvExport.export(data, (buffer) => {
+          fs.writeFileSync(`./${currentVersion}.zip`, buffer)
     })
   })
 }
@@ -459,7 +466,7 @@ const startOver = () => {
 //   })
 // })
 
-start()
+syncQueriesWithFirebase()
 
 
 
