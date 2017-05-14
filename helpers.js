@@ -105,6 +105,15 @@ export const getUserProfile = (username) => {
   })
 }
 
+export const getPicDetails = (username, picCode) => {
+  let url = `https://www.instagram.com/p/${picCode}/?taken-by=${username}&__a=1`
+  return agent
+  .get(url)
+  .set(headers)
+  .then(res => res.body)
+  .catch(err => err)
+}
+
 export const getInfluencerProfile = (influencer={query:'jkol36'}) => {
   return new Promise((resolve, reject) => {
     getUserProfile(influencer)
