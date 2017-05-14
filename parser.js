@@ -16,11 +16,13 @@ export const parseProfile = data => {
           returnData.email = email[0]
         }
       }
+      let pics = json.entry_data.ProfilePage[0].user.media.nodes
       returnData.id = json.entry_data.ProfilePage[0].user.id,
       returnData.followedBy = json.entry_data.ProfilePage[0].user.followed_by,
       returnData.follows = json.entry_data.ProfilePage[0].user.follows
       returnData.name = json.entry_data.ProfilePage[0].user.full_name
       returnData.username = username
+      returnData.lastPicCode = pics.length > 0 ? pics[0].code: null
     }
     catch(err) {
       console.log(err)

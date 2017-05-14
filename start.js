@@ -22,7 +22,8 @@ import {
   getUserProfile,
   getFollowers,
   getInfluencerProfile,
-  getSuggesstions
+  getSuggesstions,
+  getPicDetails
 } from './helpers'
 import {
   parseProfile
@@ -121,6 +122,21 @@ const startInfluencerChain = (query) => {
                 return dispatch(updateQuery(query.id, {status:3}))
               }
           })
+}
+
+const getLocationForUser = user => {
+  return getUserProfile(user)
+  .then(parseProfile)
+  .then(profile => {
+    if(profile.lastPicCode !== null) {
+      return getPicDetails(profile.username, profile.lastPicCode)
+    }
+  })
+  .then(picDetails => {
+    const {graphql:{shortcode_media:{location}}} = picDetails
+    return location
+  })
+  .catch(console.log)
 } 
 
 const runNormalForInfluencer = (influencer={}) => {
@@ -133,8 +149,11 @@ const runNormalForInfluencer = (influencer={}) => {
     return profile
   })
   .filter(profile => profile.email != undefined)
-  .then(profiles => {
-    return profiles
+  .map(profile => {
+    return getLocationForUser(profile.username)
+    .then(location => {
+      return Object.assign({}, profile, {location})
+    })
   })
   .each((profile) => {
     return dispatch(createQueryResult(influencer, profile))
@@ -244,8 +263,8 @@ const startQueriesFromLastBatch = () => {
     if(!getState().lastBatchId) {
       resolve([])
     }
+    console.log(getState())
     let queriesFromLastBatch = listify(getState().initialQueries)
-                                .filter(query => query.batchId === getState().lastBatchId.id)
                                 .filter(query => query.status !== 3)
     console.log(queriesFromLastBatch.length)
     Promise.all(Promise.map(queriesFromLastBatch, (query) => {
@@ -291,22 +310,20 @@ const dispatchQueries = () => {
       type: 'Influencer', 
       id: ID(),
       batchId: ID(),
-      payload: 'dollarshaveclub'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
       payload: 'harrys'
     },
     {
       type: 'Influencer', 
       id: ID(),
       batchId: ID(),
-      payload: 'gillete'
+      payload: 'gillette'
     },
-
-
+    {
+      type: 'Influencer', 
+      id: ID(),
+      batchId: ID(),
+      payload: 'dollarshaveclub'
+    },
   ]
   return Promise.all(Promise.map(queries, query => dispatch(createQuery(query))))
 }
@@ -426,7 +443,23 @@ const startOver = () => {
   require('./cleanup.js')
 }
 
-syncQueriesWithFirebase()
+// queryResultRef.once('value', s => {
+//   let queryIds = Object.keys(s.val())
+//   Promise.map(queryIds, queryId => {
+//     let query = s.val()[queryId]
+//     let resultsForquery = Object.keys(query).map(k => k)
+//     return Promise.all(Promise.map(resultsForquery, resultId => {
+//       return getLocationForUser(query[resultId].username)
+//       .then(location => {
+//         return queryResultRef.child(queryId).child(resultId).update({location})
+//       })
+//     }))
+//     .then(() => console.log('should be finished'))
+//     .catch(console.log)
+//   })
+// })
+
+start()
 
 
 
