@@ -23,7 +23,7 @@ export const parseProfile = data => {
       returnData.name = json.entry_data.ProfilePage[0].user.full_name
       returnData.username = username
       returnData.lastPicCode = pics.length > 0 ? pics[0].code: null
-      returnData.bio = json.entry_data.ProfilePage[0].user.biography
+      //returnData.bio = json.entry_data.ProfilePage[0].user.biography
       returnData.url = 'https://www.instagram.com/'+username
     }
     catch(err) {
