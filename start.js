@@ -466,7 +466,7 @@ const startOver = () => {
 //   })
 // })
 
-syncQueriesWithFirebase()
+start()
 
 
 
