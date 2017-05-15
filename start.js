@@ -23,7 +23,8 @@ import {
   getFollowers,
   getInfluencerProfile,
   getSuggesstions,
-  getPicDetails
+  getPicDetails,
+  getShit
 } from './helpers'
 import {
   parseProfile
@@ -133,11 +134,12 @@ const getLocationForUser = user => {
     }
   })
   .then(picDetails => {
+    let location
     try {
-      const {graphql:{shortcode_media:{location}}} = picDetails
+      location = {graphql:{shortcode_media:{location}}} = picDetails
     }
     catch(err) {
-      return null
+      location = null
     }
     return location
   })
