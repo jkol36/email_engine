@@ -136,7 +136,7 @@ const getLocationForUser = user => {
   .then(picDetails => {
     let location
     try {
-      location = {graphql:{shortcode_media:{location}}} = picDetails
+      location = picDetails.graphql.shortcode_media.location
     }
     catch(err) {
       location = null
@@ -317,20 +317,8 @@ const dispatchQueries = () => {
       type: 'Influencer', 
       id: ID(),
       batchId: ID(),
-      payload: 'harrys'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'gillette'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'dollarshaveclub'
-    },
+      payload: 'thestyledcollection'
+    }
   ]
   return Promise.all(Promise.map(queries, query => dispatch(createQuery(query))))
 }
@@ -392,20 +380,39 @@ const exportToCsv = () => {
   uniqueEmailRef.remove()
   .then(() => {
       return getUnique().then(parseResults).map(saveResult).then(() => {
-        return uniqueEmailRef.orderByKey().once('value', snap => {
+        uniqueEmailRef.orderByKey().once('value', snap => {
           Object.keys(snap.val()).map((k, index, arr) => {
           console.log(`percentage parsed ${index/arr.length}`)
-          let obj = snap.val()[k]
+          let location
+          let bio
+          let name
+          try {
+            location = snap.val()[k].location.graphql.shortcode_media.location.name
+          }
+          catch(err) {
+            location = null
+          }
+          try {
+            bio = snap.val()[k].bio.replace(/(\r\n|\n|\r)/gm,"").trim()
+          }
+          catch(err) {
+            bio = null
+          }
+          try {
+            name = snap.val()[k].name.replace(/(\r\n|\n|\r)/gm,"").trim()
+          }
+          catch(err) {
+            name = null
+          }
+          let obj = Object.assign({}, snap.val()[k], {name}, {location}, {bio})
           data.push(obj)
         })
+        var csvExport = require('csv-export')
+        var fs = require('fs')
+        csvExport.export(data, (buffer) => {
+              fs.writeFileSync(`./${currentVersion}.zip`, buffer)
+        })
       })
-    })
-  })
-  .then(() => {
-    var csvExport = require('csv-export')
-    var fs = require('fs')
-    csvExport.export(data, (buffer) => {
-          fs.writeFileSync(`./${currentVersion}.zip`, buffer)
     })
   })
 }
@@ -468,9 +475,8 @@ const startOver = () => {
 //   })
 // })
 
-start()
 
-
+console.log('running')
 
 
 
