@@ -317,7 +317,7 @@ const dispatchQueries = () => {
       type: 'Influencer', 
       id: ID(),
       batchId: ID(),
-      payload: 'thestyledcollection'
+      payload: 'igor_sevriugin'
     }
   ]
   return Promise.all(Promise.map(queries, query => dispatch(createQuery(query))))
@@ -387,7 +387,7 @@ const exportToCsv = () => {
           let bio
           let name
           try {
-            location = snap.val()[k].location.graphql.shortcode_media.location.name
+            location = snap.val()[k].location.name
           }
           catch(err) {
             location = null
@@ -476,7 +476,7 @@ const startOver = () => {
 // })
 
 
-console.log('running')
+start()
 
 
 
