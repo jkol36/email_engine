@@ -23,8 +23,7 @@ import {
   getFollowers,
   getInfluencerProfile,
   getSuggesstions,
-  getPicDetails,
-  getShit
+  getPicDetails
 } from './helpers'
 import {
   parseProfile
@@ -317,7 +316,133 @@ const dispatchQueries = () => {
       type: 'Influencer', 
       id: ID(),
       batchId: ID(),
-      payload: 'igor_sevriugin'
+      payload: 'toneitupnutrition'
+    },
+    {
+      type: 'Influencer', 
+      id: ID(),
+      batchId: ID(),
+      payload: 'vega_team'
+    },
+    {
+      type: 'Influencer', 
+      id: ID(),
+      batchId: ID(),
+      payload: 'green_blender'
+    },
+    {
+      type: 'Influencer', 
+      id: ID(),
+      batchId: ID(),
+      payload: 'alohamoment'
+    },
+    {
+      type: 'Influencer', 
+      id: ID(),
+      batchId: ID(),
+      payload: 'yoursuperfoods'
+    },
+    {
+      type: 'Influencer', 
+      id: ID(),
+      batchId: ID(),
+      payload: 'humnutrition'
+    },
+    {
+      type: 'Influencer', 
+      id: ID(),
+      batchId: ID(),
+      payload: 'gardenoflife'
+    },
+    {
+      type: 'Influencer', 
+      id: ID(),
+      batchId: ID(),
+      payload: 'sunwarriortribe'
+    },
+    {
+      type: 'Influencer', 
+      id: ID(),
+      batchId: ID(),
+      payload: 'toneitupnutrition'
+    },
+    {
+      type: 'Influencer', 
+      id: ID(),
+      batchId: ID(),
+      payload: '22daysnutrition'
+    },
+    {
+      type: 'Influencer', 
+      id: ID(),
+      batchId: ID(),
+      payload: 'toneitupnutrition'
+    },
+    {
+      type: 'Influencer', 
+      id: ID(),
+      batchId: ID(),
+      payload: 'getyuve'
+    },
+    {
+      type: 'Influencer', 
+      id: ID(),
+      batchId: ID(),
+      payload: 'organifi'
+    },
+    {
+      type: 'Influencer', 
+      id: ID(),
+      batchId: ID(),
+      payload: 'nutiva'
+    },
+    {
+      type: 'Influencer', 
+      id: ID(),
+      batchId: ID(),
+      payload: 'philosophielove'
+    },
+    {
+      type: 'Influencer', 
+      id: ID(),
+      batchId: ID(),
+      payload: 'amazinggrass'
+    },
+    {
+      type: 'Influencer', 
+      id: ID(),
+      batchId: ID(),
+      payload: 'drinkorgain'
+    },
+    {
+      type: 'Influencer', 
+      id: ID(),
+      batchId: ID(),
+      payload: 'utopicnutrition'
+    },
+    {
+      type: 'Influencer', 
+      id: ID(),
+      batchId: ID(),
+      payload: 'kachavatribe'
+    },
+    {
+      type: 'Influencer', 
+      id: ID(),
+      batchId: ID(),
+      payload: 'sproutliving'
+    },
+    {
+      type: 'Influencer', 
+      id: ID(),
+      batchId: ID(),
+      payload: 'plantfusion'
+    },
+    {
+      type: 'Influencer', 
+      id: ID(),
+      batchId: ID(),
+      payload: 'rawfusionprotein'
     }
   ]
   return Promise.all(Promise.map(queries, query => dispatch(createQuery(query))))
