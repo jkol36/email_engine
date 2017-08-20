@@ -99,7 +99,7 @@ export const getUserProfile = (username) => {
         message:'could not get user profile', 
         retryPayload: username,
         originalError: err,
-        status:err.status
+        status:err.status,
         code:404
       })
     })
