@@ -42,6 +42,7 @@ export const suggestionRef = firebase.database().ref(`igbot/${currentVersion}/qu
 export const suggestionResultRef = firebase.database().ref(`igbot/${currentVersion}/querySuggestionResults`)
 export const userSessionRef = firebase.database().ref(`igbot/${currentVersion}/anonymousUserSessions`)
 export const emailRef = firebase.database().ref(`igbot/${currentVersion}/emails`)
+export const errorRef = firebase.database().ref(`igbot/${currentVersion}/errors`)
 export const defaultPicsToFetch = 12
 export const defaultFollowersToFetch = 12
 export const DAILY_EMAIL_LIMIT = 300

@@ -12,7 +12,8 @@ import {
   uniqueEmailRef,
   uniqueEmailCount,
   queryResultRef,
-  currentVersion
+  currentVersion,
+  errorRef
 } from './config'
 import {ID, listify, eliminateDuplicates} from './utils'
 import {
@@ -207,6 +208,7 @@ const runNormalForInfluencer = (influencer={}) => {
         console.log('got 429 err')
         process.exit()
       default:
+        errorRef.push({message: err.message, status: err.status})
         process.exit()
     }
   })
