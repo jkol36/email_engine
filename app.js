@@ -208,7 +208,7 @@ const runNormalForInfluencer = (influencer={}) => {
         console.log('got 429 err')
         process.exit()
       default:
-        errorRef.push({message: err.message, status: err.status}, () => process.exit())
+        errorRef.push({message: err.message, status: err.status ? err.status: 'unknown'}, () => process.exit())
     }
   })
 }
