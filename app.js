@@ -133,7 +133,7 @@ const getLocationForUser = user => {
     }
   })
   .then(picDetails => {
-    let location
+    let location = null
     try {
       location = picDetails.graphql.shortcode_media.location
     }
@@ -145,6 +145,39 @@ const getLocationForUser = user => {
   .catch(console.log)
 } 
 
+const startProfileChain = profile => {
+  let locationForUser = null
+  let engagement
+  let rawEngagement
+  let avgLikes
+  let totalLikes = 0
+  if(profile.lastTenPics !== null) {
+    return Promise.all(Promise.map(profile.lastTenPics, pic => {
+      return getPicDetails(profile.username, pic)
+    }))
+    .each(detail => {
+      console.log('got pic details', detail)
+      console.log('likes ?', detail.graphql.shortcode_media.edge_media_preview_like.count)
+      totalLikes += +detail.graphql.shortcode_media.edge_media_preview_like.count
+      return detail
+    })
+    .then(() => {
+      avgLikes = +totalLikes/10
+      engagement = Math.floor(avgLikes/+profile.followedBy.count * 100)
+      rawEngagement = avgLikes/+profile.followedBy.count
+      return getLocationForUser(profile.username)
+    })
+    .then(location => {
+      return {location, engagement, rawEngagement}
+    })
+  }
+  else {
+    return getLocationForUser(profile.username).then(location => {
+      return {location, engagement:0, rawEngagement:0}
+    })
+  }
+
+}
 const runNormalForInfluencer = (influencer={}) => {
   console.log(`fetching ${getState().followersToFetch} followers`)
   getFollowers(influencer, getState().influencerIds[influencer.payload], getState().followersToFetch, getState().placeholders[influencer.id])
@@ -156,9 +189,10 @@ const runNormalForInfluencer = (influencer={}) => {
   })
   .filter(profile => profile.email != undefined)
   .map(profile => {
-    return getLocationForUser(profile.username)
-    .then(location => {
-      return Object.assign({}, profile, {location})
+    //fetch last pics
+    return startProfileChain(profile).then(profileMetrics => {
+      let {engagement, location, rawEngagement} = profileMetrics
+      return Object.assign({}, profile, {location}, {engagement}, {rawEngagement})
     })
   })
   .each((profile) => {
@@ -171,6 +205,8 @@ const runNormalForInfluencer = (influencer={}) => {
         return runNormalForInfluencer(influencer)
       case 429:
         console.log('got 429 err')
+        process.exit()
+      default:
         process.exit()
     }
   })
@@ -316,122 +352,8 @@ const dispatchQueries = () => {
       type: 'Influencer', 
       id: ID(),
       batchId: ID(),
-      payload: 'toneitupnutrition'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'vega_team'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'green_blender'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'alohamoment'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'yoursuperfoods'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'humnutrition'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'gardenoflife'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'sunwarriortribe'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: '22daysnutrition'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'getyuve'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'organifi'
-    },{
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'philosophielove'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'nutiva'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'amazinggrass'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'drinkorgain'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'utopicnutrition'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'kachavatribe'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'sproutliving'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'plantfusion'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'rawfusionprotein'
+      payload: 'michaelkors'
     }
-
   ]
   return Promise.all(Promise.map(queries, query => dispatch(createQuery(query))))
 }

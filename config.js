@@ -26,7 +26,7 @@ export const headers = {
   'referer': 'https://www.instagram.com/explore/tags/poker/',
   'authority': 'www.instagram.com'
 };
-export const currentVersion = 'josh_fetchmate2'
+export const currentVersion = 'yoshi'
 export const firebaseRef = firebase.database().ref(`igbot/${currentVersion}`)
 export const uniqueEmailRef = firebase.database().ref(`igbot/${currentVersion}/uniqueEmails`)
 export const uniqueEmailCount = firebase.database().ref(`igbot/${currentVersion}/uniqueEmailCount`)

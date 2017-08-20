@@ -147,6 +147,7 @@ export const getFollowers = (query, userId, count, placeholder) => {
           let followerArray = res.body.data.user.edge_followed_by.edges.map(follower => follower.node.username)
           return dispatch(placeholderUpdated(query,res.body.data.user.edge_followed_by.page_info.end_cursor)).return(followerArray)
         })
+        .timeout(6000, () => console.log('followers timeout'))
         .catch(err => err)
 
   
