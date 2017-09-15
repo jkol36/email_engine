@@ -1,12 +1,12 @@
 import firebase from 'firebase'
 import {
   queryRef, 
+  botRef,
   lastBatchRef,
   suggestionResultRef,
   suggestionRef,
   placeholderRef,
   influencerIdRef,
-  botRef,
   defaultFollowersToFetch,
   defaultPicsToFetch,
   uniqueEmailRef,
@@ -14,7 +14,12 @@ import {
   queryResultRef,
   currentVersion
 } from './config'
-import {ID, listify, eliminateDuplicates} from './utils'
+import {
+  ID, 
+  listify, 
+  eliminateDuplicates,
+  convertCsvToJson
+} from './utils'
 import {
   getInitialPicsForHashtag,
   getPicsForHashtag,
@@ -112,7 +117,6 @@ const startInfluencerChain = (query) => {
   console.log('starting influener', query)
   return dispatch(getInitialStateForQuery(query))
           .then(state => {
-            console.log(state)
             switch(state) {
               case 'run_initial':
                   return getInfluencerId(query).then(() => runNormalForInfluencer(query))
@@ -122,6 +126,38 @@ const startInfluencerChain = (query) => {
                 return dispatch(updateQuery(query.id, {status:3}))
               }
           })
+}
+
+const startProfileChain = profile => {
+  let locationForUser = null
+  let engagement
+  let rawEngagement
+  let avgLikes
+  let totalLikes = 0
+  if(profile.lastTenPics !== null) {
+    return Promise.all(Promise.map(profile.lastTenPics, pic => {
+      return getPicDetails(profile.username, pic)
+    }))
+    .each(detail => {
+      totalLikes += +detail.graphql.shortcode_media.edge_media_preview_like.count
+      return detail
+    })
+    .then(() => {
+      avgLikes = +totalLikes/10
+      engagement = Math.floor(avgLikes/+profile.followedBy.count * 100)
+      rawEngagement = avgLikes/+profile.followedBy.count
+      return getLocationForUser(profile.username)
+    })
+    .then(location => {
+      return {location, engagement, rawEngagement}
+    })
+  }
+  else {
+    return getLocationForUser(profile.username).then(location => {
+      return {location, engagement:0, rawEngagement:0}
+    })
+  }
+
 }
 
 const getLocationForUser = user => {
@@ -316,122 +352,8 @@ const dispatchQueries = () => {
       type: 'Influencer', 
       id: ID(),
       batchId: ID(),
-      payload: 'toneitupnutrition'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'vega_team'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'green_blender'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'alohamoment'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'yoursuperfoods'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'humnutrition'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'gardenoflife'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'sunwarriortribe'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: '22daysnutrition'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'getyuve'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'organifi'
-    },{
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'philosophielove'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'nutiva'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'amazinggrass'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'drinkorgain'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'utopicnutrition'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'kachavatribe'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'sproutliving'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'plantfusion'
-    },
-    {
-      type: 'Influencer', 
-      id: ID(),
-      batchId: ID(),
-      payload: 'rawfusionprotein'
+      payload: 'kyliecosmetics'
     }
-
   ]
   return Promise.all(Promise.map(queries, query => dispatch(createQuery(query))))
 }
@@ -572,6 +494,8 @@ const startOver = () => {
   require('./cleanup.js')
 }
 
+
+
 // queryResultRef.once('value', s => {
 //   let queryIds = Object.keys(s.val())
 //   Promise.map(queryIds, queryId => {
@@ -588,8 +512,49 @@ const startOver = () => {
 //   })
 // })
 
+let profilesGotten = 0
+let profilesParsed = 0
+let resultsForProfiles = 0
+let json = require('./BestOfVeganEmails.json')
+let usernames = Object.keys(json).map(k => json[k]).map(item => item.username)
 
-start()
+let data = []
+botRef.child('last-index').once('value', s => {
+  if(s.exists()) {
+    usernames = usernames.slice(s.val(), usernames.length - 1)
+    profilesGotten = s.val()
+    profilesParsed = s.val()
+    resultsForProfiles = s.val()
+  }
+})
+.then(() => {
+  Promise.each(usernames, (username, index) => {
+  let output = {}
+  return getUserProfile(username)
+  .then(profile => {
+    profilesGotten +=1
+    return profile
+  })
+  .then(parseProfile)
+  .then(profile => {
+    output = Object.assign({}, output, profile)
+    profilesParsed +=1
+    return profile
+  })
+  .then(startProfileChain)
+  .then(results => {
+    resultsForProfiles +=1
+    let {location, engagement, rawEngagement} = results
+    output = Object.assign(output, {location}, {engagement}, {rawEngagement})
+    console.log(`resultsForProfiles:${resultsForProfiles}/${usernames.length}`)
+    botRef.child('josh-results').push(output, () => {
+      return botRef.child('last-index').transaction(last => last+1)
+    })
+      data.push(output)
+  })
+  .catch(e => e)
+  })
+})
 
 
 
@@ -603,4 +568,40 @@ start()
 
 
 
+
+
+/*let data = []
+botRef.child('josh-results').once('value', snap => {
+  Object.keys(snap.val()).map((k, index, arr) => {
+    console.log(`percentage parsed ${index/arr.length}`)
+    let location
+    let bio
+    let name
+    try {
+      location = snap.val()[k].location.name
+    }
+    catch(err) {
+      location = null
+    }
+    try {
+      bio = snap.val()[k].bio.replace(/(\r\n|\n|\r)/gm,"").trim()
+    }
+    catch(err) {
+      bio = null
+    }
+    try {
+      name = snap.val()[k].name.replace(/(\r\n|\n|\r)/gm,"").trim()
+    }
+    catch(err) {
+      name = null
+    }
+    let obj = Object.assign({}, snap.val()[k], {name}, {location}, {bio})
+    data.push(obj)
+  })
+  var csvExport = require('csv-export')
+  var fs = require('fs')
+  csvExport.export(data, (buffer) => {
+        fs.writeFileSync(`./${currentVersion}.zip`, buffer)
+  })*/
+/*}) */
 

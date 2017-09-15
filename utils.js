@@ -1,3 +1,5 @@
+import csv2json from 'csv2json'
+import fs from 'fs'
 export const ID = () => {
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 5).toUpperCase()
 }
@@ -21,4 +23,12 @@ export const eliminateDuplicates = (array) => {
     out.push(x)
   }
   return out
+}
+
+export const convertCsvToJson = (filename, csv) => {
+    return Promise.resolve(fs.createReadStream(csv)
+    .pipe(csv2json({
+      separator: ','
+    }))
+    .pipe(fs.createWriteStream(`${filename}.json`)))
 }
