@@ -22,7 +22,13 @@ Technologies being used:
     mocha https://mochajs.org/
 
 Structure
-  ...to be determined
+  i need to parse the profiles and extract emails
+  i need to keep track of which followers ive seen and which followers i havent seen
+  which is why im keeping good state management and using redux
+
+  thought process
+  start with a profile that doesnt have a lot of followers that way i can test my code on a smaller profile
+  
 
 
 

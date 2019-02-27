@@ -88,6 +88,7 @@ export const influencerIds = (state={}, action) => {
   }
 }
 export const emails = (state = [], action) => {
+  console.log('emails', state, action.email)
   switch (action.type) {
       case EMAIL_FOUND:
         let newState = [...state, action.email]
@@ -167,14 +168,13 @@ export const queries = (state={}, action) => {
 //   }]
 
 // }
-export const queryResults = (state={}, action) => {
+export const queryResults = (state=[], action) => {
   switch(action.type) {
     case QUERY_RESULT_ADDED:
     case QUERY_RESULT_UPDATED:
-      state[action.queryId] = {...state[action.queryId], ...action.queryResult}
-      return state
+      return state.concat(action.queryResult)
     case EMPTY_STORE:
-      return {}
+      return []
     default:
       return state
   }

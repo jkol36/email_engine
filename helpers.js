@@ -1,7 +1,8 @@
 import {headers} from './config';
 import {parseProfile} from './parser'
-import { placeholderUpdated } from './actionCreators'
+import { placeholderUpdated, createQueryResult } from './actionCreators'
 import { store } from './store'
+import { expect } from 'chai'
 const {getState, dispatch} = store
 // import proxies from './proxies'
 const agent = require('superagent-bluebird-promise');
@@ -88,22 +89,14 @@ export const findUserFromPic = (picId, hashtag, headers) => {
 }
 
 export const getUserProfile = (username) => {
-  let url = `https://www.instagram.com/${username}/`;
-  return new Promise((resolve, reject) => {
-    agent
-    .get(url)
-    .set(headers)
-    .then(res => resolve({instagramProfile:res.text, username}))
-    .catch(err => {
-      reject({
-        message:'could not get user profile', 
-        retryPayload: username,
-        originalError: err,
-        status:err.status,
-        code:404
-      })
-    })
-  })
+  console.log('getting user profile', username)
+  expect(username).to.not.be.undefined
+  let url = `https://www.instagram.com/${username}/?__a=1`;
+  return agent
+  .get(url)
+  .set(headers)
+  .then(res => res.body.graphql.user)
+  .catch(err => err)
 }
 
 export const getPicDetails = (username, picCode) => {
@@ -124,31 +117,39 @@ export const getInfluencerProfile = (influencer={query:'jkol36'}) => {
   })
 }
 
-export const getFollowers = (query, userId, count, placeholder) => {
-  console.log('getting followers', query, userId)
-  let url = 'https://www.instagram.com/graphql/query/'
+export const getFollowersFromInstagram = (userId, count, placeholder) => {
+  console.log('getting followers from isntagram', userId)
 
-  let headers = {
-    'pragma': 'no-cache',
-    'accept-encoding': 'gzip, deflate, br',
-    'x-requested-with': 'XMLHttpRequest',
-    'accept-language': 'en-US,en;q=0.8,sv;q=0.6',
-    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36',
-    'accept': '*/*',
-    'cache-control': 'no-cache',
-    'authority': 'www.instagram.com',
-    'cookie': 'mid=WVbBaQAEAAF9JW-oX_I1_VNoktBk; fbm_124024574287414=base_domain=.instagram.com; sessionid=IGSC9852cde180ed5c1a94ef2f62cf7ce99f4054a2b97af570d334679644871eca53%3AyrVoilXqIvCIWFrjLJH9Jl2HETke4iuA%3A%7B%22_auth_user_id%22%3A54537579%2C%22_auth_user_backend%22%3A%22accounts.backends.CaseInsensitiveModelBackend%22%2C%22_auth_user_hash%22%3A%22%22%2C%22_token_ver%22%3A2%2C%22_token%22%3A%2254537579%3AvrxVgMxPuJFdBDUYf3ubBujkH6vuymDe%3A1cac10ca2298f87fd75947749dc274d475d33bff8a5556e9575cbf488d5119ab%22%2C%22_platform%22%3A4%2C%22last_refreshed%22%3A1499601326.8615574837%2C%22asns%22%3A%7B%22time%22%3A1499601326%2C%2250.77.84.233%22%3A7922%7D%7D; ig_vw=1440; ig_pr=1; fbsr_124024574287414=5t_L8Gg50s3Is7OSMpGxGQpp6_5Zx2lIhTQFmWxK4Kc.eyJhbGdvcml0aG0iOiJITUFDLVNIQTI1NiIsImNvZGUiOiJBUUJ0WnNSRktNeWFrWXJLel9xM0RQQ3g5alZhSnRWaVFvclRpS3ZsZ2tabE5Rc1QtdUN6d19yWHN0Z3FEcmQ3VEdwV19mdkVGXzk1M3Bic2JnVEpLOFdaUU1HT3l2WEZud3BtMmVkeFp6cEVfSUhLbTAxcUdsSmVYRWxrdno2Y0pqbC02OTlaMWdtSHBJWkJiQk1XY3VkbTRaTGVLeHpkOHhVaHJvMjBwRVZwcGs0X0dJNmtXcGhkQ1Zia1V5UlRoZXFOdXJpUVFUZTJLRElmejExXzlvdnhILVlRZ2lhaWVGUUJfYlpMUmZYb05VM0hkSzJtMDlzamZidnhkOTB2MWpZbUpVcGlLVDhaWHJWQ2Zxd3NhQTVtRTR5NmRHR0V4bUozYmh0a2RLb2Ewb2xNT3dnOUtYNFFTd3pVZlh6NFhiMzFYNlc3OUZacXVrZjYzMXlpY0pERSIsImlzc3VlZF9hdCI6MTQ5OTYwMTMyOSwidXNlcl9pZCI6IjY2MDI1MTQ0NyJ9; rur=ATN; csrftoken=vlImnDWggvnTBhpQvruwuJ0W0mltzyyX; ds_user_id=54537579',
-    'referer': 'https://www.instagram.com/rapaicfabian/'
-  };
+  //console.log('getting followers', query, userId)
+  let url = 'https://www.instagram.com/graphql/query/'
+  // console.log('called with', query, userId, count, placeholder)
+
   return agent
         .get(url)
         .set(headers)
         .query({id:userId, query_id:'17851374694183129', first:count, after:placeholder ? placeholder: null})
         .then(res => {
-          let followerArray = res.body.data.user.edge_followed_by.edges.map(follower => follower.node.username)
-          return dispatch(placeholderUpdated(query,res.body.data.user.edge_followed_by.page_info.end_cursor)).return(followerArray)
+          // console.log(res)
+          // console.log(''res.body.data)
+          let followers = res.body.data.user.edge_followed_by.edges.map(follower => follower.node.username)
+          let end_cursor = res.body.data.user.edge_followed_by.page_info.end_cursor
+          console.log(followers)
+          return {followers, end_cursor}
+          // let queryResults = Promise.all(Promise.map(followerArray, follower => {
+          //   return dispatch(createQueryResult(query, {
+          //     type:'follower',
+          //     instagramUsername:follower,
+          //     queryId:query.id,
+          //     pageNumber:res.body.data.user.edge_followed_by.page_info.end_cursor,
+          //     follows: query.payload,
+          //     instagramUrl:`https://www.instagram.com/${follower}/?__a=1`
+          //   }))
+          // }))
+          // .then(() => {
+          //   console.log('dispatching')
+          //   return dispatch(placeholderUpdated(query, res.body.data.user.edge_followed_by.page_info.end_cursor))
+          // })
         })
-        .timeout(6000, () => console.log('followers timeout'))
         .catch(err => err)
 
   

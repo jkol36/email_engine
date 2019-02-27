@@ -52,6 +52,7 @@ export const emailContacted = email => dispatch => {
   })
 }
 
+
 export const initialSentEmails = emailArray => dispatch => {
   return new Promise(resolve => {
     emailArray.forEach(email => {
@@ -71,6 +72,14 @@ export const followerSettingFound = (followerSetting) => dispatch => {
     })
     resolve(followerSetting)
   })
+}
+export const emailFound = (email) => dispatch => {
+  console.log('emailFound', email)
+  return dispatch({
+    type: 'EMAIL_FOUND',
+    email
+  })
+
 }
 export const picsSettingFound = (picsSetting) => dispatch => {
   return new Promise(resolve => {
@@ -161,6 +170,7 @@ export const placeholderUpdated = (query, placeholder) => dispatch => {
   })
 }
 export const initialInfluencerId = (influencerId, query) => (dispatch) => {
+  console.log('called with', influencerId, query)
   return new Promise((resolve, reject) => {
     influencerIdRef.child(query.payload).set(influencerId, () => {
       dispatch({
@@ -205,15 +215,19 @@ export const stopQuery = (id) => (dispatch) => {
   })
 }
 
-export const updateQuery = (id, query={}) => (dispatch) => {
-  console.log(`updating query ${id} ${query.payload}`) 
-  return new Promise((resolve, reject) => {
-    queryRef.child(id).update(query, () => {
-      dispatch({
+export const updateQuery = (id, query={}, updates={}) => (dispatch) => {
+  console.log('updating query', id, query)
+  //console.log(`updating query ${id} ${query.payload}`) 
+  query = Object.assign({}, query, updates)
+  console.log('new query', query)
+  dispatch(
+    {
         type: QUERY_UPDATED,
         id,
         query
-      })
+    })
+  return new Promise((resolve, reject) => {
+    queryRef.child(id).update(query, () => {
       resolve(query)
     })
   })
@@ -221,7 +235,6 @@ export const updateQuery = (id, query={}) => (dispatch) => {
 
 
 export const createQueryResult = (query, queryResult={}) => (dispatch) => {
-  console.log(`creating query result ${queryResult}`)
   return new Promise((resolve, reject) => {
     botRef.child('totalQueryResults').transaction(currentValue => currentValue +1)
     queryResultRef.child(query.id).push(queryResult, () => {
@@ -284,8 +297,8 @@ export const countChanged = (count) => dispatch => {
       .increment()
       .then(res => {
         dispatch({
-        type: COUNT_CHANGED,
-        count: res.count
+          type: COUNT_CHANGED,
+          count: res.count
         })
         resolve(res.count)
       })
