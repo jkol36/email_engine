@@ -126,26 +126,28 @@ export const getInfluencerProfile = (influencer={query:'jkol36'}) => {
 
 export const getFollowers = (query, userId, count, placeholder) => {
   console.log('getting followers', query, userId)
-  let url = 'https://www.instagram.com/graphql/query/'
+  let url = 'https://www.instagram.com/graphql/query/?query_hash=56066f031e6239f35a904ac20c9f37d9&variables=%7B%22id%22%3A%2254537579%22%2C%22include_reel%22%3Atrue%2C%22fetch_mutual%22%3Afalse%2C%22first%22%3A23%2C%22after%22%3A%22QVFCMzBOT3hqaDhISUU2REVSemlfR2lNTUw1YmtMMFByaGktTW5INEcwMFY2N1M0RjFMYXM1cG9yN2owaDF1Rm1aT1dYTk5HbkxScm16bmJXRlpuRndxSQ%3D%3D%22%7D'
 
   let headers = {
-    'pragma': 'no-cache',
+    'cookie': 'mid=W-4GrwAEAAGRAVD6cfAsl242LfO_; mcd=3; fbm_124024574287414=base_domain=.instagram.com; csrftoken=FcgQoPJWYWCvlUZJVvuuQhkc4c2iORns; ds_user_id=54537579; sessionid=54537579%3AGvDWQZVX5n59tk%3A23; shbid=14488; rur=PRN; shbts=1551207098.7981935; urlgen="{\\"73.81.123.173\\": 7922\\054 \\"107.85.83.24\\": 20057\\054 \\"2601:43:1:a8a0:2514:4730:a3e:4bba\\": 7922\\054 \\"74.94.14.114\\": 7922}:1gz97k:lY3Z5Vqto6GRfIRp26CS_VlmQq0"',
+    'x-ig-app-id': '936619743392459',
     'accept-encoding': 'gzip, deflate, br',
-    'x-requested-with': 'XMLHttpRequest',
-    'accept-language': 'en-US,en;q=0.8,sv;q=0.6',
-    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36',
+    'accept-language': 'en-US,en;q=0.9',
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.109 Safari/537.36',
     'accept': '*/*',
-    'cache-control': 'no-cache',
+    'referer': 'https://www.instagram.com/',
     'authority': 'www.instagram.com',
-    'cookie': 'mid=WVbBaQAEAAF9JW-oX_I1_VNoktBk; fbm_124024574287414=base_domain=.instagram.com; sessionid=IGSC9852cde180ed5c1a94ef2f62cf7ce99f4054a2b97af570d334679644871eca53%3AyrVoilXqIvCIWFrjLJH9Jl2HETke4iuA%3A%7B%22_auth_user_id%22%3A54537579%2C%22_auth_user_backend%22%3A%22accounts.backends.CaseInsensitiveModelBackend%22%2C%22_auth_user_hash%22%3A%22%22%2C%22_token_ver%22%3A2%2C%22_token%22%3A%2254537579%3AvrxVgMxPuJFdBDUYf3ubBujkH6vuymDe%3A1cac10ca2298f87fd75947749dc274d475d33bff8a5556e9575cbf488d5119ab%22%2C%22_platform%22%3A4%2C%22last_refreshed%22%3A1499601326.8615574837%2C%22asns%22%3A%7B%22time%22%3A1499601326%2C%2250.77.84.233%22%3A7922%7D%7D; ig_vw=1440; ig_pr=1; fbsr_124024574287414=5t_L8Gg50s3Is7OSMpGxGQpp6_5Zx2lIhTQFmWxK4Kc.eyJhbGdvcml0aG0iOiJITUFDLVNIQTI1NiIsImNvZGUiOiJBUUJ0WnNSRktNeWFrWXJLel9xM0RQQ3g5alZhSnRWaVFvclRpS3ZsZ2tabE5Rc1QtdUN6d19yWHN0Z3FEcmQ3VEdwV19mdkVGXzk1M3Bic2JnVEpLOFdaUU1HT3l2WEZud3BtMmVkeFp6cEVfSUhLbTAxcUdsSmVYRWxrdno2Y0pqbC02OTlaMWdtSHBJWkJiQk1XY3VkbTRaTGVLeHpkOHhVaHJvMjBwRVZwcGs0X0dJNmtXcGhkQ1Zia1V5UlRoZXFOdXJpUVFUZTJLRElmejExXzlvdnhILVlRZ2lhaWVGUUJfYlpMUmZYb05VM0hkSzJtMDlzamZidnhkOTB2MWpZbUpVcGlLVDhaWHJWQ2Zxd3NhQTVtRTR5NmRHR0V4bUozYmh0a2RLb2Ewb2xNT3dnOUtYNFFTd3pVZlh6NFhiMzFYNlc3OUZacXVrZjYzMXlpY0pERSIsImlzc3VlZF9hdCI6MTQ5OTYwMTMyOSwidXNlcl9pZCI6IjY2MDI1MTQ0NyJ9; rur=ATN; csrftoken=vlImnDWggvnTBhpQvruwuJ0W0mltzyyX; ds_user_id=54537579',
-    'referer': 'https://www.instagram.com/rapaicfabian/'
-  };
+    'x-requested-with': 'XMLHttpRequest',
+    'x-instagram-gis': '0466702d06f15edb17640f696ee75a15',
+  }
+
   return agent
         .get(url)
         .set(headers)
         .query({id:userId, query_id:'17851374694183129', first:count, after:placeholder ? placeholder: null})
         .then(res => {
           let followerArray = res.body.data.user.edge_followed_by.edges.map(follower => follower.node.username)
+          console.log(followerArray)
           return dispatch(placeholderUpdated(query,res.body.data.user.edge_followed_by.page_info.end_cursor)).return(followerArray)
         })
         .timeout(6000, () => console.log('followers timeout'))
